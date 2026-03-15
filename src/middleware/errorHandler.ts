@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { ValidationError } from 'express-validator';
 import { Boom } from '@hapi/boom';
-import { logger } from '../utils/apiLogger';
-import { ApiError } from '../types/api';
+import { logger } from '../Utils/apiLogger';
+import { ApiError } from '../Types/api';
 
 export const errorHandler = (
   error: Error | ApiError | Boom,

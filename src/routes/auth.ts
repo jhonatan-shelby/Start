@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { handleValidationErrors, asyncHandler } from '../middleware/errorHandler';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
-import { ApiResponse } from '../types/api';
+import { ApiResponse } from '../Types/api';
 
 const router = Router();
 const prisma = new PrismaClient();

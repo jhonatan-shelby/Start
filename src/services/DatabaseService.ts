@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { logger } from '../utils/apiLogger';
+import { logger } from '../Utils/apiLogger';
 
 export class DatabaseService {
   private prisma: PrismaClient;

@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 import crypto from 'crypto';
 import { DatabaseService } from './DatabaseService';
-import { webhookLogger } from '../utils/apiLogger';
+import { webhookLogger } from '../Utils/apiLogger';
 
 export class WebhookService {
   private dbService: DatabaseService;

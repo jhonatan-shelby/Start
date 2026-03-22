@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { io } from 'socket.io-client'
-import { Smartphone, ShieldCheck, LogOut, MessageSquare, Send, Bell } from 'lucide-react'
+import { Smartphone, ShieldCheck, LogOut, MessageSquare, Send, Bell, Key } from 'lucide-react'
 import axios from 'axios'
 import './App.css'
 
@@ -15,7 +15,6 @@ interface SessionState {
   name?: string;
 }
 
-// Interfaz para mensajes recibidos
 interface WhatsAppMessage {
   pushName?: string;
   messageTimestamp: number;
@@ -31,13 +30,25 @@ interface WhatsAppMessage {
 }
 
 function App() {
-  const [session, setSession] = useState<SessionState>({ status: 'AWAITING_SOCKET' });
+  const [apiKey, setApiKey] = useState(localStorage.getItem('baileys_api_key') || '');
+  const [isEditingKey, setIsEditingKey] = useState(!apiKey);
+  const [session, setSession] = useState<SessionState>({ status: apiKey ? 'AWAITING_SOCKET' : 'REQUIRES_API_KEY' });
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [destNumber, setDestNumber] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Apply API key globally to Axios
   useEffect(() => {
+    if (apiKey) {
+      axios.defaults.headers.common['X-API-Key'] = apiKey;
+      localStorage.setItem('baileys_api_key', apiKey);
+    }
+  }, [apiKey]);
+
+  useEffect(() => {
+    if (isEditingKey || !apiKey) return;
+
     // 1. Conectar al WebSocket del Backend
     const newSocket = io(API_URL);
 
@@ -53,9 +64,14 @@ function App() {
           setSession({ status: 'INITIALIZING' });
           await axios.post(`${API_URL}/api/sessions`, { sessionId: SESSION_ID });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error fetching session state:", err);
-        setSession({ status: 'ERROR_CONECTANDO' });
+        if (err.response && err.response.status === 401) {
+          setSession({ status: 'UNAUTHORIZED' });
+          setIsEditingKey(true);
+        } else {
+          setSession({ status: 'ERROR_CONECTANDO' });
+        }
       }
     };
     
@@ -78,7 +94,7 @@ function App() {
     return () => {
       newSocket.disconnect();
     }
-  }, []);
+  }, [apiKey, isEditingKey]);
 
   // Auto-scroll al final del chat cuando llega un mensaje
   useEffect(() => {
@@ -86,7 +102,7 @@ function App() {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!inputText || !destNumber) return;
+    if (!inputText || !destNumber || !apiKey) return;
     try {
       const formattedNum = destNumber.includes('@s.whatsapp.net') 
         ? destNumber 
@@ -107,7 +123,7 @@ function App() {
       setMessages(p => [...p, fakeMsg]);
       setInputText('');
     } catch (err) {
-      alert("Error al enviar el mensaje. Verifica la API.");
+      alert("Error al enviar el mensaje. Verifica tu API Key o conexión.");
     }
   };
 
@@ -133,49 +149,87 @@ function App() {
           <p className="subtitle">Gestión de sesión Baileys + React</p>
         </div>
 
-        <div className={`status-badge ${isConnected ? 'connected' : ''}`}>
-          <div className={`status-indicator ${isConnected ? 'connected' : ''}`}></div>
-          {isConnected ? 'Vinculado a WhatsApp' : (session.status || 'Desconectado')}
-        </div>
-
-        {/* CONTENEDOR DE QR CODE PARA ESCANEAR */}
-        {!isConnected && session.qrCode && (
-          <div className="qr-container">
-            <p style={{marginBottom: "16px", fontSize: "0.9rem", color: "var(--text-muted)", textAlign: "center"}}>
-              Ve a Dispositivos Vinculados en tu celular y escanea:
-            </p>
-            <img src={session.qrCode} alt="WhatsApp QR Code" width={220} height={220} />
-          </div>
-        )}
-
-        {/* PANTALLA DE CARGA */}
-        {!isConnected && !session.qrCode && session.status !== 'INITIALIZING' && (
-          <div className="qr-container" style={{ borderStyle: 'solid', animation: 'none' }}>
-            <div className="loader"></div>
-            <p style={{ marginTop: '16px', fontSize: '0.9rem', color: "var(--text-muted)" }}>
-              {session.status === 'ERROR_CONECTANDO' ? 'Error: ¿Api Apagada?' : 'Conectando al servidor...'}
-            </p>
-          </div>
-        )}
-
-        {/* PANEL CONECTADO (NÚMERO VINCULADO) */}
-        {isConnected && (
-          <div style={{ marginTop: '20px', background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-              <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)' }}>
-                <ShieldCheck size={28} color="white" />
-              </div>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{session.name || 'API Robot'}</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  +{session.phoneNumber}
-                </div>
-              </div>
+        {/* API KEY INPUT */}
+        {isEditingKey ? (
+          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', color: 'var(--text-muted)' }}>
+              <Key size={16} /> <span style={{ fontSize: '0.85rem' }}>Autenticación API</span>
             </div>
-            <button className="btn btn-danger" onClick={handleDisconnect}>
-              <LogOut size={18} /> Cerrar Sesión Segura
+            <input 
+              type="password" 
+              className="input-field" 
+              placeholder="Ingresa tu X-API-Key" 
+              value={apiKey}
+              onChange={e => setApiKey(e.target.value)}
+              style={{ width: '100%', marginBottom: '12px' }}
+            />
+            <button className="btn" onClick={() => {
+              if(apiKey) {
+                setIsEditingKey(false);
+                setSession({ status: 'AWAITING_SOCKET' });
+              }
+            }}>
+              Guardar y Conectar
             </button>
           </div>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', fontSize: '0.85rem' }}>
+            <span style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Key size={14} /> API Key Guardada
+            </span>
+            <button onClick={() => setIsEditingKey(true)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', textDecoration: 'underline' }}>
+              Cambiar
+            </button>
+          </div>
+        )}
+
+        {!isEditingKey && (
+          <>
+            <div className={`status-badge ${isConnected ? 'connected' : ''}`}>
+              <div className={`status-indicator ${isConnected ? 'connected' : ''}`}></div>
+              {isConnected ? 'Vinculado a WhatsApp' : (session.status === 'UNAUTHORIZED' ? 'API Key Inválida' : session.status || 'Desconectado')}
+            </div>
+
+            {/* CONTENEDOR DE QR CODE PARA ESCANEAR */}
+            {!isConnected && session.qrCode && (
+              <div className="qr-container">
+                <p style={{marginBottom: "16px", fontSize: "0.9rem", color: "var(--text-muted)", textAlign: "center"}}>
+                  Ve a Dispositivos Vinculados en tu celular y escanea:
+                </p>
+                <img src={session.qrCode} alt="WhatsApp QR Code" width={220} height={220} />
+              </div>
+            )}
+
+            {/* PANTALLA DE CARGA */}
+            {!isConnected && !session.qrCode && session.status !== 'INITIALIZING' && session.status !== 'UNAUTHORIZED' && (
+              <div className="qr-container" style={{ borderStyle: 'solid', animation: 'none' }}>
+                <div className="loader"></div>
+                <p style={{ marginTop: '16px', fontSize: '0.9rem', color: "var(--text-muted)" }}>
+                  {session.status === 'ERROR_CONECTANDO' ? 'Error: ¿Api Apagada?' : 'Conectando al servidor...'}
+                </p>
+              </div>
+            )}
+
+            {/* PANEL CONECTADO (NÚMERO VINCULADO) */}
+            {isConnected && (
+              <div style={{ marginTop: '20px', background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+                  <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)' }}>
+                    <ShieldCheck size={28} color="white" />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{session.name || 'API Robot'}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      +{session.phoneNumber}
+                    </div>
+                  </div>
+                </div>
+                <button className="btn btn-danger" onClick={handleDisconnect}>
+                  <LogOut size={18} /> Cerrar Sesión Segura
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         <div style={{ marginTop: 'auto', fontSize: '0.75rem', color: 'rgba(148, 163, 184, 0.5)', textAlign: 'center' }}>

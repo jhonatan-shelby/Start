@@ -15,7 +15,8 @@ RUN apk add --no-cache \
     pango-dev \
     giflib-dev \
     librsvg-dev \
-    pixman-dev
+    pixman-dev \
+    openssl
 
 # Copy package files and helper script
 # Ensure engine-requirements.js is available during install

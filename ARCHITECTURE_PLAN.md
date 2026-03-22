@@ -1,35 +1,34 @@
-# 🚀 Arquitectura y Despliegue Express (Lo más rápido posible)
+# 🚀 Arquitectura y Despliegue Express (Local + Túnel)
 
-## 1. Infraestructura "Todo en Uno" (VPS Único + Docker)
-Para lanzar el proyecto rápidamente y sin fricciones, correrán **TODO el sistema en un mismo servidor virtual (VPS)** usando el archivo `docker-compose.yml` que ya tienen armado. Nada de clústeres ni CD/CI complicados por ahora.
+## 1. Infraestructura "Cero Costo" (Docker Local + Cloudflare/Ngrok)
+Para lanzar el proyecto sin pagar servidores de inmediato, correrán **TODO el sistema en la computadora local de Windows** usando el archivo `docker-compose.yml` que ya tienen.
 
-* **Backend (Baileys API)** + **PostgreSQL** + **Redis** se ejecutan juntos en contenedores.
-* **Frontend** servido directamente desde el backend (o en un contenedor de Nginx simple) para que toda la app esté en un solo puerto y dominio.
-* **Seguridad Express**: En lugar de configurar Nginx con certificados manuales en terminal, usarán **Cloudflare Tunnels** o **Nginx Proxy Manager**, que les da HTTPS (candadito verde) en 5 minutos con interfaz gráfica.
-
----
-
-## 2. División del Trabajo (Modo Rápido)
-
-### 🧑‍💻 Developer 1: Infraestructura y Servidor (Backend Role)
-Tu único objetivo es subir el código a una IP pública y que todo levante correctamente.
-
-1. **VPS y Docker**: Renta un servidor básico (ej. Ubuntu con 2GB-4GB de RAM). Instálale Docker y clona el repositorio del código (`git clone`).
-2. **Levantar Servicios**: Configura tus contraseñas en el archivo `.env` de producción y corre `docker compose up -d --build`. ¡Listo, backend y BD corriendo!
-3. **Exponer con HTTPS**: Usa **Cloudflare** (que es gratis) para apuntar tu dominio a la IP del servidor. Esto cifra tu tráfico en minutos sin tocar un archivo de Nginx.
-4. **Validar Postman**: Confirma que responder a llamadas remotas enviando un mensaje vía API REST desde tu computadora hacia la IP pública.
-
-### 🧑‍💻 Developer 2: Interfaz Visual y Conexión (Frontend Role)
-Tu único objetivo es crear una pantalla mínima y funcional que se conecte con la API.
-
-1. **Pantalla 1 (Vincular WhatsApp)**: Crea una vista que se conecte a `Socket.IO`, escuche el evento del código QR, y pinte el QR en pantalla para que el usuario pueda escanear su teléfono.
-2. **Pantalla 2 (Mensajería Básica)**: Una vista que reciba eventos de nuevos mensajes (vía socket) y los ponga en pantalla. Debe tener un input de texto básico que dispare un `POST /api/messages` hacia el backend.
-3. **Manejo de CORS**: Asegúrate que en local las URLs del Frontend apunten al `localhost:3001` y en producción usen el dominio de la API.
-4. **Entregar Build**: Ejecuta `npm run build` en tu frontend y pásale la carpeta `dist` estática al Developer 1 para montarla en el VPS.
+* **Backend (Baileys API) + PostgreSQL + Redis**: Se ejecutarán juntos en los contenedores nativos de tu computadora principal (usando Docker Desktop).
+* **Túnel a Internet**: Usaremos **Cloudflare Tunnels (gratis)** o **Ngrok** para crear una URL pública segura (ej: `https://mi-api-whatsapp.ngrok-free.app`) que apunte directamente a tu puerto `3001` local sin abrir puertos en el router.
+* **Colaboración Remota**: El Developer 2 (Frontend) usará esa URL pública para construir la interfaz y consumir datos desde su propia casa/computadora, tal cual lo haría con una API real en internet.
 
 ---
 
-## 3. Siguientes Pasos (Hoy Mismo)
-1. **Local**: Inicia tu aplicación de **Docker Desktop local en Windows**. Levanta la DB con `docker compose up -d postgres redis`.
-2. **Frontend**: El Developer 2 empieza a maquetar las dos pantallas conectadas al `localhost:3001`.
-3. **Servidor**: El Developer 1 consigue el VPS y replica exactamente lo que hay local pero en un entorno de la nube.
+## 2. División del Trabajo (Modo Rápido Cero Costos)
+
+### 🧑‍💻 Developer 1: Equipo Host y Túnel (Backend Role)
+Tu objetivo es transformar tu computadora en el "servidor", manteniéndola encendida para despachar peticiones.
+
+1. **Arrancar Docker Base**: Iniciar Docker Desktop en Windows y correr tu comando `docker compose up -d --build`. Verifica abriendo `http://localhost:3001/health` en tu navegador para ver si responde la API.
+2. **Levantar el Túnel**: Descargar e iniciar un agente de red (`ngrok` o `cloudflared`). Ejecutar el comando de túnel (por ejemplo `ngrok http 3001`).
+3. **Mantener y Monitorear la Red Pública**: Copiar la URL cifrada "HTTPS" que te escupe la consola del túnel y enviársela al Developer 2 (debes avisarle si tu PC se reinicia y la URL expira, en caso de no instalar una IP estática o túnel permanente).
+4. **Hospedar la Producción Real**: Durante las pruebas y mientras no haya un servidor que cueste dinero de por medio, tu PC local con este túnel será el cerebro del robot en WhatsApp.
+
+### 🧑‍💻 Developer 2: Interfaz Visual Remota (Frontend Role)
+Tu objetivo es desarrollar toda la UI desde tu máquina asumiendo que el backend de tu colega es el servidor oficial.
+
+1. **Ajuste de Endpoints y CORS**: Configura el frontend (Angular/React/Astro) para que las constantes de conexión envíen solicitudes REST (`POST/GET`) hacia la URL HTTPS generada, no a *localhost*.
+2. **Pantalla 1 (Scan & Vincular WhatsApp)**: Crear la vista para conectarse a `Socket.IO` apuntado hacia esa URL externa. Escuchar el evento de socket que contiene la dupla del código QR en WebSockets y pintarlo en pantalla.
+3. **Pantalla 2 (Chat Input & Histórico Básicos)**: Vista que traiga las conversaciones remotamentte de Postgre a través del puerto exportado del backend. Generar input para accionar llamadas al POST `/api/messages`.
+
+---
+
+## 3. Siguientes Pasos de Implementación Efectiva (Hoy Mismo)
+1. **Host Action**: Inicia tu **Docker Desktop local en Windows** localizando y resolviendo el error del motor si era un problema anterior, levanta todo usando `docker compose up -d`.
+2. **Network Action**: Configura Ngrok/Cloudflare Tunnel y pásale la URL al dev-2.
+3. **Dev Action**: Developer 2 comienza en local el UI contra esa IP segura expuesta por Dev-1.

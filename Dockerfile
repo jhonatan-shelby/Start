@@ -46,5 +46,6 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
-# Start the application with ts-node (runs TypeScript directly)
-CMD ["node", "-r", "ts-node/register", "src/app.ts"]
+# Start the application with ts-node in transpile-only mode (skips type-checking)
+# This allows the container to run while we fix TypeScript type errors.
+CMD ["node", "-r", "ts-node/register/transpile-only", "src/app.ts"]

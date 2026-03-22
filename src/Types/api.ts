@@ -10,6 +10,7 @@ export interface AuthenticatedRequest extends Request {
     apiKey: string;
   };
   sessionId?: string;
+  startTime?: number;
 }
 
 // WhatsApp Session Types

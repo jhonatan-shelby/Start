@@ -39,6 +39,7 @@ services:
     container_name: baileys-api
     environment:
       NODE_ENV: production
+      NODE_OPTIONS: "--max-old-space-size=512 --expose-gc" # Limita RAM de Node.js a 512MB y ayuda al recolector de basura
       PORT: 3001
       DATABASE_URL: postgresql://baileys:baileys_password@postgres:5432/baileys_api?schema=public
       REDIS_URL: redis://redis:6379
@@ -57,6 +58,10 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G # Previene que el contenedor consuma toda la RAM del host
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
       interval: 30s

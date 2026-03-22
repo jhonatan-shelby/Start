@@ -144,6 +144,17 @@ io.on('connection', (socket) => {
 const databaseService = new DatabaseService();
 const whatsAppService = new WhatsAppService(io);
 
+// Optimización de RAM: Ejecutar Recolector de Basura manualmente cada ciertas horas/minutos
+// Requiere la bandera --expose-gc en NODE_OPTIONS o en el script de arranque (agregado en docker-compose)
+setInterval(() => {
+  if (global.gc) {
+    global.gc();
+    logger.info('[Memoria] Recolector de basura ejecutado manualmente');
+  } else {
+    logger.debug('[Memoria] Función global.gc() no disponible. Asegúrate de iniciar con --expose-gc');
+  }
+}, 5 * 60 * 1000); // 5 minutos
+
 // Export for use in routes (exported at bottom)
 
 // Graceful shutdown

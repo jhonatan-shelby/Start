@@ -81,7 +81,10 @@ export class WhatsAppService {
           creds: state.creds,
           keys: makeCacheableSignalKeyStore(state.keys, whatsappLogger)
         },
-        generateHighQualityLinkPreview: true,
+        // Optimizaciones de memoria y CPU:
+        generateHighQualityLinkPreview: false, // Reduce uso de RAM/CPU al evitar generar miniaturas de enlaces
+        syncFullHistory: false, // Evita descargar todo el historial de chats al conectar (ahorra RAM)
+        markOnlineOnConnect: false, // Opcional: Reduce procesamiento inicial al no forzar estado online
         getMessage: async (key) => {
           // Implement message retrieval from database
           return undefined;

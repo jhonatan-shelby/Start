@@ -13,18 +13,24 @@ export class USyncContactProtocol implements USyncQueryProtocol {
 	}
 
 	getUserElement(user: USyncUser): BinaryNode {
-		//TODO: Implement type / username fields (not yet supported)
+		// Include optional type and username attrs when provided by the caller
+		const attrs: { [k: string]: string } = {}
+		if(user.type) attrs.type = user.type
+		if((user as any).username) attrs.username = (user as any).username
+
 		return {
 			tag: 'contact',
-			attrs: {},
+			attrs,
 			content: user.phone,
 		}
 	}
 
-	parser(node: BinaryNode): boolean {
+	parser(node: BinaryNode): { exists: boolean, username?: string } | false {
 		if(node.tag === 'contact') {
 			assertNodeErrorFree(node)
-			return node?.attrs?.type === 'in'
+			const exists = node?.attrs?.type === 'in'
+			const username = node?.attrs?.username
+			return { exists, username }
 		}
 
 		return false

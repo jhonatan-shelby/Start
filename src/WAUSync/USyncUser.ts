@@ -3,6 +3,7 @@ export class USyncUser {
 	lid: string
 	phone: string
 	type: string
+	username?: string
 	personaId: string
 
 	withId(id: string) {
@@ -29,4 +30,9 @@ export class USyncUser {
 	  this.personaId = personaId
 	  return this
 	}
+
+		withUsername(username: string) {
+			this.username = username
+			return this
+		}
 }

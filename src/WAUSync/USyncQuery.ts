@@ -7,9 +7,16 @@ import { USyncUser } from './USyncUser'
 
 export type USyncQueryResultList = { [protocol: string]: unknown, id: string }
 
+export type USyncQueryError = {
+	code?: string
+	message?: string
+	retryAfterMs?: number
+}
+
 export type USyncQueryResult = {
-    list: USyncQueryResultList[]
-    sideList: USyncQueryResultList[]
+	list: USyncQueryResultList[]
+	sideList: USyncQueryResultList[]
+	error?: USyncQueryError
 }
 
 export class USyncQuery {
@@ -50,16 +57,29 @@ export class USyncQuery {
 		}))
 
 		const queryResult: USyncQueryResult = {
-			// TODO: implement errors etc.
 			list: [],
 			sideList: [],
 		}
 
 		const usyncNode = getBinaryNodeChild(result, 'usync')
 
-		//TODO: implement error backoff, refresh etc.
-		//TODO: see if there are any errors in the result node
-		//const resultNode = getBinaryNodeChild(usyncNode, 'result')
+		// detect errors inside the usync response
+		const errorNode = getBinaryNodeChild(usyncNode, 'error')
+		if(errorNode) {
+			// try to extract useful info from attrs or content
+			const code = errorNode.attrs?.code
+			let message: string | undefined
+			if(Array.isArray(errorNode.content)) {
+				const textChild = errorNode.content.find((c: any) => c.tag === 'message' || c.tag === 'text')
+				if(textChild && (typeof textChild.content === 'string' || Buffer.isBuffer(textChild.content))) {
+					message = typeof textChild.content === 'string' ? textChild.content : textChild.content.toString()
+				}
+			}
+			// parse optional retry-after header if provided
+			const retryAfterMs = errorNode.attrs?.['retry-after-ms'] ? +errorNode.attrs['retry-after-ms'] : undefined
+			queryResult.error = { code, message, retryAfterMs }
+			return queryResult
+		}
 
 		const listNode = getBinaryNodeChild(usyncNode, 'list')
 		if(Array.isArray(listNode?.content) && typeof listNode !== 'undefined') {

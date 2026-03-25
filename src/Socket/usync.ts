@@ -69,9 +69,28 @@ export const makeUSyncSocket = (config: SocketConfig) => {
 			],
 		}
 
-		const result = await query(iq)
+		// implement retry + exponential backoff for transient usync errors
+		const maxRetries = 3
+		const baseDelayMs = 500
 
-		return usyncQuery.parseUSyncQueryResult(result)
+		for(let attempt = 0; attempt <= maxRetries; attempt++) {
+			const result = await query(iq)
+			const parsed = usyncQuery.parseUSyncQueryResult(result)
+			// if no error, return immediately
+			if(parsed && !parsed.error) return parsed
+
+			// if this was the last attempt, throw a Boom error
+			if(attempt === maxRetries) {
+				const errMsg = parsed?.error?.message || 'USync query failed after retries'
+				throw new Boom(errMsg)
+			}
+
+			// determine delay: prefer server-provided retryAfterMs
+			const retryAfter = parsed?.error?.retryAfterMs
+			const jitter = Math.floor(Math.random() * 100)
+			const delay = retryAfter ?? (baseDelayMs * Math.pow(2, attempt) + jitter)
+			await new Promise(res => setTimeout(res, delay))
+		}
 	}
 
 	return {

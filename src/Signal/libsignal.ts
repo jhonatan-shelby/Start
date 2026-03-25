@@ -7,6 +7,7 @@ import { jidDecode } from '../WABinary'
 
 export function makeLibSignalRepository(auth: SignalAuthState): SignalRepository {
 	const storage = signalStorage(auth)
+	const signalStorageRepo = storage as any
 	return {
 		decryptGroupMessage({ group, authorJid, msg }) {
 			const senderName = jidToSignalSenderKeyName(group, authorJid)
@@ -28,7 +29,7 @@ export function makeLibSignalRepository(auth: SignalAuthState): SignalRepository
 		},
 		async decryptMessage({ jid, type, ciphertext }) {
 			const addr = jidToSignalProtocolAddress(jid)
-			const session = new libsignal.SessionCipher(storage, addr)
+			const session = new libsignal.SessionCipher(signalStorageRepo, addr)
 			let result: Buffer
 			switch (type) {
 			case 'pkmsg':
@@ -43,7 +44,7 @@ export function makeLibSignalRepository(auth: SignalAuthState): SignalRepository
 		},
 		async encryptMessage({ jid, data }) {
 			const addr = jidToSignalProtocolAddress(jid)
-			const cipher = new libsignal.SessionCipher(storage, addr)
+			const cipher = new libsignal.SessionCipher(signalStorageRepo, addr)
 
 			const { type: sigType, body } = await cipher.encrypt(data)
 			const type = sigType === 3 ? 'pkmsg' : 'msg'
@@ -68,7 +69,7 @@ export function makeLibSignalRepository(auth: SignalAuthState): SignalRepository
 			}
 		},
 		async injectE2ESession({ jid, session }) {
-			const cipher = new libsignal.SessionBuilder(storage, jidToSignalProtocolAddress(jid))
+			const cipher = new libsignal.SessionBuilder(signalStorageRepo, jidToSignalProtocolAddress(jid))
 			await cipher.initOutgoing(session)
 		},
 		jidToSignalProtocolAddress(jid) {
@@ -134,7 +135,7 @@ function signalStorage({ creds, keys }: SignalAuthState) {
 			const { signedIdentityKey } = creds
 			return {
 				privKey: Buffer.from(signedIdentityKey.private),
-				pubKey: generateSignalPubKey(signedIdentityKey.public),
+				pubKey: Buffer.from(generateSignalPubKey(signedIdentityKey.public)),
 			}
 		}
 	}

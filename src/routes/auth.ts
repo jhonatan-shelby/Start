@@ -4,11 +4,12 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { handleValidationErrors, asyncHandler } from '../middleware/errorHandler';
-import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
-import { ApiResponse } from '../Types/api';
+import { authMiddleware } from '../middleware/auth';
+import { ApiResponse, AuthenticatedRequest } from '../Types/api';
 
 const router = Router();
 const prisma = new PrismaClient();
+const jwtExpiresIn = (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
 
 /**
  * @swagger
@@ -86,7 +87,7 @@ router.post('/register', [
   const token = jwt.sign(
     { userId: user.id },
     process.env.JWT_SECRET!,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn: jwtExpiresIn }
   );
 
   res.status(201).json({
@@ -160,7 +161,7 @@ router.post('/login', [
   const token = jwt.sign(
     { userId: user.id },
     process.env.JWT_SECRET!,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn: jwtExpiresIn }
   );
 
   res.json({

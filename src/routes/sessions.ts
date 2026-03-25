@@ -25,15 +25,15 @@ router.get('/', asyncHandler(async (req, res) => {
   const sessions = await dbService.getUserSessions(req.user!.id);
   
   // Enhance with real-time status from WhatsApp service
-  const enhancedSessions = sessions.map(session => {
-    const liveSession = whatsAppService.getSession(session.sessionId);
+  const enhancedSessions = await Promise.all(sessions.map(async session => {
+    const liveSession = await whatsAppService.getSession(session.sessionId);
     return {
       ...session,
       liveStatus: liveSession?.status || SessionStatus.DISCONNECTED,
       qrCode: liveSession?.qrCode,
       pairingCode: liveSession?.pairingCode
     };
-  });
+  }));
 
   res.json({
     success: true,

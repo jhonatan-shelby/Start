@@ -435,7 +435,7 @@ export class WhatsAppService {
   async deleteSession(sessionId: string): Promise<void> {
     const session = this.sessions.get(sessionId);
     if (session?.socket) {
-      session.socket.end();
+      session.socket.end(undefined);
     }
     this.sessions.delete(sessionId);
     await this.dbService.deleteSession(sessionId);
@@ -479,7 +479,7 @@ export class WhatsAppService {
     for (const [sessionId, session] of this.sessions) {
       if (session.socket) {
         try {
-          session.socket.end();
+          session.socket.end(undefined);
         } catch (error) {
           whatsappLogger.error(`Error closing session ${sessionId}:`, error);
         }

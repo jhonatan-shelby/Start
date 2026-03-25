@@ -28,7 +28,7 @@ export class DatabaseService {
 
     // Log database queries in development
     if (process.env.NODE_ENV === 'development') {
-      this.prisma.$on('query', (e) => {
+      (this.prisma as any).$on('query', (e: any) => {
         logger.debug({
           query: e.query,
           params: e.params,
@@ -37,21 +37,21 @@ export class DatabaseService {
       });
     }
 
-    this.prisma.$on('error', (e) => {
+    (this.prisma as any).$on('error', (e: any) => {
       logger.error({
         target: e.target,
         message: e.message
       }, 'Database Error');
     });
 
-    this.prisma.$on('info', (e) => {
+    (this.prisma as any).$on('info', (e: any) => {
       logger.info({
         target: e.target,
         message: e.message
       }, 'Database Info');
     });
 
-    this.prisma.$on('warn', (e) => {
+    (this.prisma as any).$on('warn', (e: any) => {
       logger.warn({
         target: e.target,
         message: e.message
@@ -353,7 +353,7 @@ export class DatabaseService {
   }
 
   async getDashboardStats(userId?: string) {
-    const where = userId ? { userId } : {};
+    const messageWhere = userId ? { session: { userId } } : {};
 
     const [
       totalSessions,
@@ -371,10 +371,10 @@ export class DatabaseService {
           status: 'CONNECTED' 
         } 
       }),
-      this.prisma.message.count({ where }),
+      this.prisma.message.count({ where: messageWhere }),
       this.prisma.message.count({
         where: {
-          ...where,
+          ...messageWhere,
           timestamp: {
             gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
           }

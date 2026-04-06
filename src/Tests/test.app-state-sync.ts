@@ -1,6 +1,7 @@
 import { AccountSettings, ChatMutation, Contact, InitialAppStateSyncOptions } from '../Types'
+import { randomJid } from './utils'
 import { unixTimestampSeconds } from '../Utils'
-import { processSyncAction } from '../Utils/chat-utils'
+import { processSyncAction, processSyncActions } from '../Utils/chat-utils'
 import logger from '../Utils/logger'
 
 describe('App State Sync Tests', () => {
@@ -58,7 +59,7 @@ describe('App State Sync Tests', () => {
 		]
 
 		for(const mutations of CASES) {
-			const events = processSyncAction(mutations, me, undefined, logger)
+			const events = processSyncActions(mutations, me, undefined, logger)
 			expect(events['chats.update']).toHaveLength(1)
 			const event = events['chats.update']?.[0]
 			expect(event.archive).toEqual(false)

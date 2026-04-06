@@ -113,10 +113,11 @@ export type InitialReceivedChatsState = {
         /** the last message received from the other party */
         lastMsgRecvTimestamp?: number
         /** the absolute last message in the chat */
-        lastMsgTimestamp: number
+        lastMsgTimestamp?: number
     }
 }
 
 export type InitialAppStateSyncOptions = {
     accountSettings: AccountSettings
+    recvChats?: InitialReceivedChatsState
 }

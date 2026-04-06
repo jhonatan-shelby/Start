@@ -25,6 +25,24 @@ const mutationKeys = async(keydata: Uint8Array) => {
 	}
 }
 
+export const processSyncActions = (
+	mutations: ChatMutation[],
+	me: Contact,
+	initialSyncOpts?: InitialAppStateSyncOptions,
+	logger?: ILogger,
+) => {
+	const events: { [k: string]: any } = {}
+	const emitter = {
+		emit: (name: string, payload: any) => { events[name] = payload }
+	} as unknown as BaileysEventEmitter
+
+	for(const m of mutations) {
+		processSyncAction(m, emitter, me, initialSyncOpts, logger)
+	}
+
+	return events
+}
+
 const generateMac = (operation: proto.SyncdMutation.SyncdOperation, data: Buffer, keyId: Uint8Array | string, key: Buffer) => {
 	const getKeyData = () => {
 		let r: number

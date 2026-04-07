@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nightclub Dashboard — Control de Camareras</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --neon-pink: #ff00ff;
+            --neon-blue: #00f2ff;
+            --dark-bg: #0d0d12;
+            --card-bg: #1a1a24;
+        }
+        body {
+            background-color: var(--dark-bg);
+            color: #e0e0e0;
+            font-family: 'Roboto', sans-serif;
+            background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0d0d12 100%);
+        }
+        .neon-text {
+            text-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink);
+        }
+        .neon-border {
+            border: 1px solid rgba(255, 0, 255, 0.3);
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.1);
+        }
+        .neon-border-blue {
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
+        }
+        .glass {
+            background: rgba(26, 26, 36, 0.8);
+            backdrop-filter: blur(10px);
+        }
+        .sidebar-item:hover {
+            background: rgba(255, 0, 255, 0.1);
+            border-left: 4px solid var(--neon-pink);
+        }
+        .sidebar-item.active {
+            background: rgba(255, 0, 255, 0.15);
+            border-left: 4px solid var(--neon-pink);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 glass border-r border-gray-800 flex flex-col z-20">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold tracking-tighter neon-text text-pink-500 font-['Orbitron']">NIGHTCLUB</h1>
+            <p class="text-[10px] text-gray-500 tracking-widest uppercase">Management System</p>
+        </div>
+        
+        <nav class="flex-1 mt-6">
+            <div onclick="showSection('waitresses')" class="sidebar-item active p-4 flex items-center cursor-pointer transition-all">
+                <i data-lucide="users" class="w-5 h-5 mr-3 text-pink-500"></i>
+                <span class="text-sm font-medium">Camareras</span>
+            </div>
+            <div onclick="showSection('clients')" class="sidebar-item p-4 flex items-center cursor-pointer transition-all">
+                <i data-lucide="contact" class="w-5 h-5 mr-3 text-blue-400"></i>
+                <span class="text-sm font-medium">Clientes (CRM)</span>
+            </div>
+            <div onclick="showSection('promotions')" class="sidebar-item p-4 flex items-center cursor-pointer transition-all">
+                <i data-lucide="ticket-percent" class="w-5 h-5 mr-3 text-purple-400"></i>
+                <span class="text-sm font-medium">Promociones</span>
+            </div>
+        </nav>
+
+        <div class="p-6 border-t border-gray-800">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-full bg-pink-600 flex items-center justify-center font-bold">G</div>
+                <div>
+                    <p class="text-xs font-bold">Gabriel</p>
+                    <p class="text-[10px] text-green-500">Online</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8 relative">
+        <!-- Section Waitresses -->
+        <section id="waitresses-section">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-bold font-['Orbitron']">Gestión de <span class="text-pink-500">Camareras</span></h2>
+                <button onclick="openAddModal()" class="bg-pink-600 hover:bg-pink-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center transition-all shadow-lg shadow-pink-900/20">
+                    <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Nueva Camarera
+                </button>
+            </div>
+            
+            <div id="waitress-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Cards will be injected here -->
+                <div class="animate-pulse bg-gray-800/50 h-48 rounded-2xl"></div>
+                <div class="animate-pulse bg-gray-800/50 h-48 rounded-2xl"></div>
+                <div class="animate-pulse bg-gray-800/50 h-48 rounded-2xl"></div>
+            </div>
+        </section>
+
+        <!-- Section Clients -->
+        <section id="clients-section" class="hidden">
+            <h2 class="text-3xl font-bold font-['Orbitron'] mb-8">Base de Datos de <span class="text-blue-400">Clientes</span></h2>
+            <div class="glass neon-border-blue rounded-2xl overflow-hidden">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-800/50 uppercase text-[10px] tracking-widest text-gray-400">
+                        <tr>
+                            <th class="p-4">Cliente / WhatsApp</th>
+                            <th class="p-4">Camarera</th>
+                            <th class="p-4">Etapa</th>
+                            <th class="p-4">Citas</th>
+                            <th class="p-4">Último contacto</th>
+                            <th class="p-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="client-list">
+                        <!-- Rows will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section Promotions -->
+        <section id="promotions-section" class="hidden">
+            <h2 class="text-3xl font-bold font-['Orbitron'] mb-8">Promociones <span class="text-purple-400">LLM</span></h2>
+            <div id="promotions-list" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Promo cards will be injected here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: Add/Edit Waitress -->
+    <div id="addWaitressModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="glass neon-border p-8 rounded-2xl w-full max-w-md">
+            <h3 id="modal-waitress-title" class="text-xl font-bold font-['Orbitron'] mb-6">Añadir Nueva Camarera</h3>
+            <div class="space-y-4">
+                <input id="waitress-edit-id" type="hidden">
+                <div id="id-input-container">
+                    <label class="block text-xs text-gray-400 uppercase mb-1">ID (ej: maria)</label>
+                    <input id="waitress-id" type="text" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm focus:border-pink-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 uppercase mb-1">Nombre Completo</label>
+                    <input id="waitress-name" type="text" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm focus:border-pink-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 uppercase mb-1">Instagram</label>
+                        <input id="waitress-instagram" type="text" placeholder="@usuario" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm focus:border-pink-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 uppercase mb-1">Facebook</label>
+                        <input id="waitress-facebook" type="text" placeholder="URL" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm focus:border-pink-500 outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 uppercase mb-1">WhatsApp Publico</label>
+                        <input id="waitress-whatsapp" type="text" placeholder="+593..." class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm focus:border-pink-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 uppercase mb-1">Horario Laboral</label>
+                        <input id="waitress-schedule" type="text" placeholder="Lun-Sáb 19:00 - 02:00" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm focus:border-pink-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 uppercase mb-1">Cargar Foto de Perfil</label>
+                    <input type="file" id="waitress-file-input" accept="image/*" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-[10px] text-gray-400 focus:border-pink-500 outline-none">
+                    <input id="waitress-image" type="hidden">
+                    <p id="image-status" class="text-[8px] text-green-500 mt-1 hidden">✓ Foto lista para subir</p>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 uppercase mb-1">Personalidad</label>
+                    <textarea id="waitress-personality" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm focus:border-pink-500 outline-none h-20"></textarea>
+                </div>
+                <div class="flex space-x-3 pt-4">
+                    <button onclick="closeModal('addWaitressModal')" class="flex-1 bg-gray-800 hover:bg-gray-700 p-3 rounded-lg font-bold">Cancelar</button>
+                    <button id="modal-submit-btn" onclick="saveWaitressData()" class="flex-1 bg-pink-600 hover:bg-pink-500 p-3 rounded-lg font-bold font-['Orbitron']">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: QR Viewer -->
+    <div id="qrModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="glass neon-border p-8 rounded-2xl w-full max-w-sm text-center">
+            <h3 class="text-xl font-bold font-['Orbitron'] mb-4">Vincular <span id="qr-waitress-name" class="text-pink-500"></span></h3>
+            <p class="text-sm text-gray-400 mb-6">Escanea el código QR desde WhatsApp para activar esta sesión.</p>
+            <div id="qrcode" class="bg-white p-3 rounded-xl inline-block mb-6 mx-auto"></div>
+            <button onclick="closeModal('qrModal')" class="block w-full bg-pink-600 hover:bg-pink-500 p-3 rounded-lg font-bold">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Modal: AI Recap -->
+    <div id="recapModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="glass neon-border p-8 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h3 class="text-xl font-bold font-['Orbitron'] text-pink-500">✨ Resumen AI (Recap)</h3>
+                    <p class="text-xs text-gray-500">Análisis para <span id="recap-waitress-name" class="font-bold"></span></p>
+                </div>
+                <button onclick="closeModal('recapModal')"><i data-lucide="x" class="w-6 h-6 text-gray-500 hover:text-white"></i></button>
+            </div>
+            <div id="recap-content" class="text-sm text-gray-300 space-y-4 leading-relaxed whitespace-pre-line bg-gray-900/50 p-6 rounded-xl border border-gray-800">
+                <p class="text-center text-pink-500/50 animate-bounce">Consultando a Claudia...</p>
+            </div>
+            <button onclick="closeModal('recapModal')" class="w-full mt-8 bg-pink-600 hover:bg-pink-500 p-3 rounded-lg font-bold">Cerrar Análisis</button>
+        </div>
+    </div>
+    <div id="fichaModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="glass neon-border p-8 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h3 id="modal-client-name" class="text-2xl font-bold font-['Orbitron'] text-blue-400">Nombre Cliente</h3>
+                    <p id="modal-client-phone" class="text-xs text-gray-500 font-mono"></p>
+                </div>
+                <button onclick="closeModal('fichaModal')" class="text-gray-500 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
+                    <h4 class="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Preferencias y Hobbies</h4>
+                    <p id="modal-client-info" class="text-sm text-gray-300 italic"></p>
+                </div>
+                <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-800 text-center">
+                    <h4 class="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Próxima Cita</h4>
+                    <p id="modal-client-appointment" class="text-sm font-bold text-pink-500"></p>
+                </div>
+            </div>
+
+            <h4 class="text-[10px] uppercase tracking-widest text-gray-500 mb-4 flex items-center">
+                <i data-lucide="message-square" class="w-3 h-3 mr-2 text-blue-400"></i> Últimos 5 Mensajes
+            </h4>
+            <div id="modal-history" class="space-y-4 mb-6">
+                <!-- Chat history will be injected here -->
+            </div>
+
+            <button onclick="closeModal('fichaModal')" class="w-full bg-blue-600 hover:bg-blue-500 p-3 rounded-lg font-bold transition-all">Entendido</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        lucide.createIcons();
+        const API_URL = 'http://localhost:3000';
+        let qrGenerator = null;
+
+        function showSection(id) {
+            ['waitresses', 'clients', 'promotions'].forEach(s => {
+                document.getElementById(`${s}-section`).classList.add('hidden');
+                const sidebarItem = document.querySelector(`[onclick="showSection('${s}')"]`);
+                if (sidebarItem) sidebarItem.classList.remove('active');
+            });
+            document.getElementById(`${id}-section`).classList.remove('hidden');
+            const activeSidebarItem = document.querySelector(`[onclick="showSection('${id}')"]`);
+            if (activeSidebarItem) activeSidebarItem.classList.add('active');
+            
+            if (id === 'waitresses') fetchWaitresses();
+            if (id === 'clients') fetchClients();
+            if (id === 'promotions') fetchPromotions();
+        }
+
+        async function viewFicha(phone) {
+            const rawPhone = phone.replace('+', '');
+            const res = await fetch(`${API_URL}/fichas/${rawPhone}`);
+            const f = await res.json();
+            
+            document.getElementById('modal-client-name').innerText = f.name || 'Sin Nombre';
+            document.getElementById('modal-client-phone').innerText = f.phone;
+            
+            const info = [];
+            if (f.hobbies && f.hobbies.length > 0) info.push(`Hobbies: ${f.hobbies.join(', ')}`);
+            if (f.preferences && Object.keys(f.preferences).length > 0) {
+                const prefs = Object.entries(f.preferences).map(([k,v]) => `${k}: ${v}`).join('; ');
+                info.push(`Preferencias: ${prefs}`);
+            }
+            document.getElementById('modal-client-info').innerText = info.join('\n') || 'No hay datos extra todavía.';
+            
+            document.getElementById('modal-client-appointment').innerText = f.date ? 
+                `${f.service} el ${f.date} a las ${f.time} en ${f.location}` : 
+                'No agendada';
+
+            const historyContainer = document.getElementById('modal-history');
+            historyContainer.innerHTML = '';
+            
+            if (f.lastMessages && f.lastMessages.length > 0) {
+                f.lastMessages.forEach(m => {
+                    const msgDiv = document.createElement('div');
+                    const isUser = m.role === 'user';
+                    msgDiv.className = `flex ${isUser ? 'justify-start' : 'justify-end'}`;
+                    msgDiv.innerHTML = `
+                        <div class="max-w-[80%] p-3 rounded-2xl text-sm ${isUser ? 'bg-gray-800 rounded-bl-none' : 'bg-pink-600/20 border border-pink-500/30 rounded-br-none'}">
+                            <p>${m.content}</p>
+                            <span class="text-[8px] opacity-50 block mt-1">${new Date(m.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                    `;
+                    historyContainer.appendChild(msgDiv);
+                });
+            } else {
+                historyContainer.innerHTML = '<p class="text-center text-gray-600 italic py-4">No hay historial reciente.</p>';
+            }
+
+            openModal('fichaModal');
+            lucide.createIcons();
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            if (id === 'qrModal' && qrGenerator) {
+              document.getElementById('qrcode').innerHTML = '';
+              qrGenerator = null;
+            }
+        }
+
+        // --- Waitresses Logic ---
+        async function fetchWaitresses() {
+            const res = await fetch(`${API_URL}/waitresses`);
+            const data = await res.json();
+            const container = document.getElementById('waitress-list');
+            container.innerHTML = '';
+
+            data.forEach(w => {
+                const card = document.createElement('div');
+                card.className = `glass neon-border p-6 rounded-2xl relative transition-all hover:scale-[1.02]`;
+                
+                let statusColor = 'text-gray-500';
+                let statusIcon = 'circle-off';
+                if (w.sessionStatus === 'ready') { statusColor = 'text-green-500'; statusIcon = 'check-circle'; }
+                if (w.sessionStatus === 'qr') { statusColor = 'text-yellow-500'; statusIcon = 'qr-code'; }
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="w-14 h-14 rounded-full bg-gray-800 flex items-center justify-center font-bold text-pink-500 text-xl border border-pink-500/30 overflow-hidden">
+                            ${w.imageUrl ? `<img src="${w.imageUrl}" class="w-full h-full object-cover">` : w.name[0]}
+                        </div>
+                        <div class="flex space-x-3 text-gray-400">
+                            ${w.whatsapp ? `<a href="https://wa.me/${w.whatsapp.replace(/\D/g,'')}" target="_blank" class="hover:text-green-500"><i data-lucide="phone" class="w-4 h-4"></i></a>` : ''}
+                            ${w.instagram ? `<a href="https://instagram.com/${w.instagram.replace('@','')}" target="_blank" class="hover:text-pink-500"><i data-lucide="instagram" class="w-4 h-4"></i></a>` : ''}
+                            ${w.facebook ? `<a href="${w.facebook}" target="_blank" class="hover:text-blue-500"><i data-lucide="facebook" class="w-4 h-4"></i></a>` : ''}
+                            <button onclick="openEditModal('${w.id}')" class="hover:text-blue-400 transition-colors">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteWaitress('${w.id}')" class="hover:text-red-500 transition-colors">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <h3 class="font-bold text-lg mb-1">${w.name}</h3>
+                    <p class="text-[10px] text-gray-500 mb-2 italic">Horario: ${w.schedule || 'No definido'}</p>
+                    
+                    <div class="flex items-center ${statusColor} text-xs font-bold mb-6">
+                        <i data-lucide="${statusIcon}" class="w-3 h-3 mr-1"></i>
+                        ${w.sessionStatus.toUpperCase()}
+                        ${w.sessionStatus === 'offline' ? `<button onclick="connectWaitress('${w.id}')" class="ml-2 text-pink-500 hover:underline text-[10px]">Conectar</button>` : ''}
+                    </div>
+
+                    ${w.sessionStatus === 'qr' ? 
+                        `<button onclick="showQR('${w.name}', '${w.qr}')" class="w-full bg-pink-600 hover:bg-pink-500 text-white p-2 rounded-lg text-xs font-bold transition-all font-['Orbitron']">Ver QR</button>` :
+                        `<div class="space-y-3">
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="bg-gray-900/50 p-2 rounded text-center border border-gray-800">
+                                    <p class="text-[8px] text-gray-500 uppercase">Chats</p>
+                                    <p class="text-xs font-bold">${w.stats.messagesSent}</p>
+                                </div>
+                                <div class="bg-gray-900/50 p-2 rounded text-center border border-gray-800">
+                                    <p class="text-[8px] text-gray-500 uppercase">Citas</p>
+                                    <p class="text-xs font-bold text-pink-400">${w.stats.appointmentsBooked}</p>
+                                </div>
+                                <div class="bg-gray-900/50 p-2 rounded text-center border border-pink-900/30">
+                                    <p class="text-[8px] text-pink-500 uppercase">Alta Prob.</p>
+                                    <p class="text-xs font-bold text-neon-pink">${w.stats.highProbabilityClients || 0}</p>
+                                </div>
+                            </div>
+                            <button onclick="generateRecap('${w.id}', '${w.name}')" class="w-full bg-gray-800 hover:bg-gray-700 border border-pink-500/20 text-pink-500 p-2 rounded-lg text-[10px] font-bold flex items-center justify-center transition-all">
+                                <i data-lucide="sparkles" class="w-3 h-3 mr-2 animate-pulse"></i> ✨ Generar Recap (Análisis AI)
+                            </button>
+                        </div>`
+                    }
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        async function openEditModal(id) {
+            const res = await fetch(`${API_URL}/waitresses`);
+            const all = await res.json();
+            const w = all.find(item => item.id === id);
+            if (!w) return;
+
+            document.getElementById('modal-waitress-title').innerText = 'Editar Camarera';
+            document.getElementById('waitress-edit-id').value = id;
+            document.getElementById('id-input-container').classList.add('hidden');
+            
+            document.getElementById('waitress-name').value = w.name;
+            document.getElementById('waitress-instagram').value = w.instagram || '';
+            document.getElementById('waitress-facebook').value = w.facebook || '';
+            document.getElementById('waitress-whatsapp').value = w.whatsapp || '';
+            document.getElementById('waitress-schedule').value = w.schedule || '';
+            document.getElementById('waitress-personality').value = w.personality || '';
+            document.getElementById('waitress-image').value = w.imageUrl || '';
+            
+            openModal('addWaitressModal');
+        }
+
+        function openAddModal() {
+            document.getElementById('modal-waitress-title').innerText = 'Añadir Nueva Camarera';
+            document.getElementById('waitress-edit-id').value = '';
+            document.getElementById('id-input-container').classList.remove('hidden');
+            
+            document.getElementById('waitress-id').value = '';
+            document.getElementById('waitress-name').value = '';
+            document.getElementById('waitress-instagram').value = '';
+            document.getElementById('waitress-facebook').value = '';
+            document.getElementById('waitress-whatsapp').value = '';
+            document.getElementById('waitress-schedule').value = 'Lun-Sáb 19:00 - 02:00';
+            document.getElementById('waitress-personality').value = '';
+            document.getElementById('waitress-image').value = '';
+            
+            openModal('addWaitressModal');
+        }
+
+        async function saveWaitressData() {
+            const editId = document.getElementById('waitress-edit-id').value;
+            const data = {
+                name: document.getElementById('waitress-name').value,
+                instagram: document.getElementById('waitress-instagram').value,
+                facebook: document.getElementById('waitress-facebook').value,
+                whatsapp: document.getElementById('waitress-whatsapp').value,
+                schedule: document.getElementById('waitress-schedule').value,
+                personality: document.getElementById('waitress-personality').value,
+                imageUrl: document.getElementById('waitress-image').value,
+            };
+
+            if (editId) {
+                // UPDATE
+                await fetch(`${API_URL}/waitresses/${editId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            } else {
+                // CREATE
+                data.id = document.getElementById('waitress-id').value;
+                if (!data.id || !data.name) return alert('ID y Nombre son obligatorios');
+                await fetch(`${API_URL}/waitresses`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            }
+
+            closeModal('addWaitressModal');
+            // Limpiar input file
+            document.getElementById('waitress-file-input').value = '';
+            document.getElementById('image-status').classList.add('hidden');
+            
+            fetchWaitresses();
+        }
+
+        // --- Helper: Convert File to Base64 ---
+        document.addEventListener('change', (e) => {
+            if (e.target.id === 'waitress-file-input') {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    document.getElementById('waitress-image').value = event.target.result;
+                    document.getElementById('image-status').innerText = '✓ Foto cargada';
+                    document.getElementById('image-status').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        async function connectWaitress(id) {
+            await fetch(`${API_URL}/waitresses/${id}/connect`, { method: 'POST' });
+            fetchWaitresses();
+        }
+
+        async function deleteWaitress(id) {
+            if (!confirm('¿Eliminar a esta camarera?')) return;
+            await fetch(`${API_URL}/waitresses/${id}`, { method: 'DELETE' });
+            fetchWaitresses();
+        }
+
+        function showQR(name, qrString) {
+            document.getElementById('qr-waitress-name').innerText = name;
+            document.getElementById('qrcode').innerHTML = '';
+            
+            qrGenerator = new QRCode(document.getElementById("qrcode"), {
+                text: qrString,
+                width: 256,
+                height: 256,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+            
+            openModal('qrModal');
+        }
+
+        async function generateRecap(id, name) {
+            document.getElementById('recap-waitress-name').innerText = name;
+            document.getElementById('recap-content').innerHTML = `
+                <div class="animate-pulse flex flex-col space-y-3">
+                    <div class="h-4 bg-gray-800 rounded w-3/4"></div>
+                    <div class="h-4 bg-gray-800 rounded w-1/2"></div>
+                    <div class="h-4 bg-gray-800 rounded w-5/6"></div>
+                    <p class="text-center text-pink-500/50 animate-bounce pt-4">Claudia está analizando los chats...</p>
+                </div>
+            `;
+            openModal('recapModal');
+            lucide.createIcons();
+            
+            try {
+                const res = await fetch(`${API_URL}/waitresses/${id}/recap`);
+                const data = await res.json();
+                document.getElementById('recap-content').innerText = data.recap || 'No se pudo generar el análisis.';
+            } catch (err) {
+                document.getElementById('recap-content').innerText = 'Error al conectar con la IA.';
+            }
+        }
+
+        async function fetchClients() {
+            const res = await fetch(`${API_URL}/fichas`);
+            const data = await res.json();
+            const container = document.getElementById('client-list');
+            container.innerHTML = '';
+
+            data.fichas.forEach(f => {
+                const row = document.createElement('tr');
+                row.className = "border-t border-gray-800 hover:bg-white/5 transition-colors";
+                
+                let stageColor = 'text-gray-400';
+                if (f.stage === 'confirmed') stageColor = 'text-green-500';
+                if (f.stage === 'scheduling') stageColor = 'text-blue-400';
+
+                row.innerHTML = `
+                    <td class="p-4">
+                        <div class="font-bold">${f.name || 'Sin Nombre'}</div>
+                        <div class="text-[10px] text-gray-500">${f.phone}</div>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex items-center text-xs">
+                            <span class="w-6 h-6 rounded-full bg-pink-600 flex items-center justify-center text-[10px] mr-2">
+                                ${f.assignedWaitressId ? f.assignedWaitressId[0].toUpperCase() : '?'}
+                            </span>
+                            ${f.assignedWaitressId || 'Sin asignar'}
+                        </div>
+                    </td>
+                    <td class="p-4">
+                        <span class="px-2 py-1 rounded text-[10px] font-bold bg-gray-900 border border-gray-700 ${stageColor}">
+                            ${f.stage.toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="p-4 font-bold text-center">${f.appointments}</td>
+                    <td class="p-4 text-xs text-gray-500">${new Date(f.lastContact).toLocaleString()}</td>
+                    <td class="p-4">
+                        <button onclick="viewFicha('${f.phone}')" class="text-pink-500 hover:underline text-xs font-bold">Ver Perfil</button>
+                    </td>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // --- Promotions Logic ---
+        async function fetchPromotions() {
+            const res = await fetch(`${API_URL}/promotions`);
+            const data = await res.json();
+            const container = document.getElementById('promotions-list');
+            container.innerHTML = '';
+
+            data.active.forEach(p => {
+                const card = document.createElement('div');
+                card.className = `glass p-6 rounded-2xl border ${p.isActive ? 'border-purple-500/50' : 'border-gray-800'}`;
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg">${p.title}</h3>
+                        <div class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" ${p.isActive ? 'checked' : ''} onchange="togglePromo('${p.id}', this.checked)" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-400 italic mb-4">"${p.description}"</p>
+                    <div class="flex items-center text-[10px] uppercase font-bold text-gray-600">
+                        <i data-lucide="brain" class="w-3 h-3 mr-1"></i>
+                        El bot ofrecerá esto cuando esté ACTIVO
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        async function togglePromo(id, isActive) {
+            await fetch(`${API_URL}/promotions/toggle`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, isActive })
+            });
+            fetchPromotions();
+        }
+
+        // Initial fetch
+        fetchWaitresses();
+
+    </script>
+</body>
+</html>

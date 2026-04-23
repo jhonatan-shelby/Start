@@ -6,6 +6,34 @@ const { getFicha } = require('./AppointmentService');
 const { createWaitress, loadWaitress, getAllWaitresses, deleteWaitress, saveWaitress } = require('./WaitressService');
 const { loadPromotions, savePromotions, togglePromotion } = require('./PromotionService');
 
+// ─────────────────────────────────────────────
+// Protección global contra crashes de Puppeteer
+// ProtocolError ocurre cuando WhatsApp Web navega la página durante una evaluación.
+// Es esperado y no debe detener el servidor.
+// ─────────────────────────────────────────────
+process.on('unhandledRejection', (reason) => {
+    const msg = reason?.message || String(reason);
+    if (msg.includes('Protocol') || msg.includes('context') ||
+        msg.includes('Target closed') || msg.includes('Session closed')) {
+        console.warn('[Server] ⚠️  Puppeteer error ignorado (página navegando):', msg.slice(0, 80));
+        return;
+    }
+    console.error('[Server] ❌ Unhandled rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    const msg = err?.message || String(err);
+    if (msg.includes('Protocol') || msg.includes('context') ||
+        msg.includes('Target closed') || msg.includes('Session closed')) {
+        console.warn('[Server] ⚠️  Puppeteer crash ignorado (página navegando):', msg.slice(0, 80));
+        return;
+    }
+    console.error('[Server] ❌ Uncaught exception:', err);
+    process.exit(1); // Solo salir en errores reales
+});
+
+
+
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));

@@ -46,7 +46,8 @@ async function getAIResponse(chatId, userMessage) {
 
     try {
         const response = await client.messages.create({
-            model: 'claude-3-haiku-20240307', // Rápido y económico
+            model: 'claude-haiku-4-5', // Rápido y económico
+
             max_tokens: 500,
             system: SYSTEM_PROMPT,
             messages: history,

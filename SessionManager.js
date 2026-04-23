@@ -2,6 +2,7 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const { processMessage } = require('./AppointmentService');
 const { saveSticker, sendRandomSticker, getStickerCount } = require('./StickerService');
+const { sendWaitressPhoto, getPhotoCount } = require('./PhotoService');
 
 // ─────────────────────────────────────────────
 // Whitelist — solo estos números recibirán respuesta del bot
@@ -11,10 +12,27 @@ const ALLOWED_NUMBERS = [
     '593993525105', // john_cortes Stiven
     '593979378260', // Naye🖤
     '593962330960', // Juan Diego
+    '593959170729',
+    '593967451651',
+    '281101834698926@lid',
 ];
+
+// ─────────────────────────────────────────────
+// Pon TEST_MODE = true para que el bot responda a CUALQUIER número
+// (útil para probar sin editar la whitelist)
+// ─────────────────────────────────────────────
+const TEST_MODE = true;
+
 
 // Map to store all active sessions: { sessionId -> { client, status, qr } }
 const sessions = new Map();
+
+// ─────────────────────────────────────────────
+// Debounce buffer: acumula mensajes del mismo chat antes de responder
+// { "sessionId:chatId" -> { messages: [], timer, lastMsg, session } }
+// ─────────────────────────────────────────────
+const pendingMessages = new Map();
+const DEBOUNCE_MS = 3000; // espera 3s por si llegan más mensajes seguidos
 
 /**
  * Create and start a new WhatsApp session
@@ -66,13 +84,13 @@ function createSession(sessionId) {
         session.status = 'disconnected';
     });
 
-    // Incoming messages → respond with AI only to whitelisted numbers
+    // Incoming messages → debounce y respond con IA
     client.on('message_create', async (message) => {
         // Ignore messages sent by the bot itself
         if (message.fromMe) return;
 
-        // Ignore group messages and status broadcasts
-        if (message.from.endsWith('@g.us') || message.from === 'status@broadcast') return;
+        // Ignore group messages, status broadcasts and newsletter channels
+        if (message.from.endsWith('@g.us') || message.from === 'status@broadcast' || message.from.endsWith('@newsletter')) return;
 
         // Extract phone number (remove @c.us suffix)
         const phoneNumber = message.from.replace('@c.us', '');
@@ -86,46 +104,120 @@ function createSession(sessionId) {
 
         console.log(`[${sessionId}] 📨 ${phoneNumber}: ${message.body}`);
 
-        // Only reply to whitelisted numbers
-        if (!ALLOWED_NUMBERS.includes(phoneNumber)) {
+        // Only reply to whitelisted numbers (or everyone if TEST_MODE is on)
+        if (!TEST_MODE && !ALLOWED_NUMBERS.includes(phoneNumber)) {
             console.log(`[${sessionId}] ⏭️  Skipping — ${phoneNumber} is not in whitelist`);
             return;
         }
 
-        // 1. Esperar 5 segundos iniciales (silencio, como si estuviera leyendo)
-        console.log(`[${sessionId}] ⏳ Pasando 5s de lectura...`);
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        // ── DEBOUNCE ──────────────────────────────────────────────────────
+        // Acumula mensajes del mismo chat durante DEBOUNCE_MS ms antes de responder
+        const bufferKey = `${sessionId}:${message.from}`;
+        const existing = pendingMessages.get(bufferKey);
 
-        try {
-            // Obtener el chat para mostrar el estado "Escribiendo..."
-            const chat = await message.getChat();
-            await chat.sendStateTyping();
-            
-            // 2. Esperar 10 segundos con el estado "Escribiendo..." (tiempo considerable)
-            console.log(`[${sessionId}] ⌨️ Escribiendo por 10s...`);
-            await new Promise(resolve => setTimeout(resolve, 10000));
-
-            const aiReply = await processMessage(message.from, message.body, sessionId);
-            if (!aiReply) {
-                await chat.clearState();
-                return;
-            }
-
-            console.log(`[${sessionId}] 🤖 Replying to ${phoneNumber}: ${aiReply}`);
-            await message.reply(aiReply);
-            
-            // Limpiar el estado de escritura
-            await chat.clearState();
-
-            // 30% de probabilidad de enviar un sticker después del mensaje
-            if (Math.random() < 0.3) {
-                await new Promise(r => setTimeout(r, 1500)); // pequeña pausa antes del sticker
-                await sendRandomSticker(session.client, message.from);
-            }
-        } catch (err) {
-            console.error(`[${sessionId}] Error replying:`, err.message);
+        if (existing) {
+            // Ya hay mensajes pendientes: cancelar el timer anterior y agregar este
+            clearTimeout(existing.timer);
+            if (message.body && message.body.trim()) existing.messages.push(message.body.trim());
+            existing.lastMsg = message;
+        } else {
+            // Primer mensaje de este chat en este lote
+            pendingMessages.set(bufferKey, {
+                messages: message.body && message.body.trim() ? [message.body.trim()] : [],
+                lastMsg: message,
+                session,
+                timer: null,
+            });
         }
+
+        const buffer = pendingMessages.get(bufferKey);
+
+        // (Re)iniciar el timer de debounce
+        buffer.timer = setTimeout(async () => {
+            pendingMessages.delete(bufferKey);
+
+            const bufferedMessages = buffer.messages;
+            const lastMessage = buffer.lastMsg;
+            const msgCount = bufferedMessages.length;
+
+            if (msgCount === 0) return; // solo stickers/medias sin texto
+
+            // Combinar todos los mensajes en uno solo para la IA
+            const combined = bufferedMessages.join('\n');
+            const MAX_PARTS = msgCount >= 2 ? 5 : 3; // más mensajes = más partes permitidas
+
+            console.log(`[${sessionId}] ⏳ Procesando ${msgCount} mensaje(s) de ${phoneNumber}...`);
+
+            // Simular lectura (proporcional al número de mensajes)
+            await new Promise(resolve => setTimeout(resolve, 2000 + msgCount * 1000));
+
+            try {
+                const chat = await lastMessage.getChat();
+                try { await chat.sendStateTyping(); } catch (_) {}
+
+                // Simular escritura
+                const typingMs = 8000 + msgCount * 1500;
+                console.log(`[${sessionId}] ⌨️ Escribiendo por ${Math.round(typingMs / 1000)}s...`);
+                await new Promise(resolve => setTimeout(resolve, typingMs));
+
+                const result = await processMessage(lastMessage.from, combined, sessionId);
+                if (!result) {
+                    try { await chat.clearState(); } catch (_) {}
+                    return;
+                }
+
+                const aiText = typeof result === 'string' ? result : result.message;
+                const shouldSendPhoto = typeof result === 'object' && result.sendPhoto;
+                const requestedSelfie = typeof result === 'object' && result.requestSelfie;
+
+                if (requestedSelfie) console.log(`[${sessionId}] 🤳 IA pidió selfie al cliente`);
+
+                // Separar en partes, respetar MAX_PARTS
+                let parts = aiText.split(/[.\n]+/).map(p => p.trim()).filter(p => p.length > 0);
+                if (parts.length > MAX_PARTS) {
+                    const overflow = parts.splice(MAX_PARTS - 1).join('. ');
+                    parts.push(overflow);
+                    parts = parts.slice(0, MAX_PARTS);
+                }
+
+                console.log(`[${sessionId}] 🤖 Replying to ${phoneNumber} in ${parts.length}/${MAX_PARTS} message(s)`);
+
+                for (const [index, part] of parts.entries()) {
+                    await lastMessage.reply(part);
+
+                    if (index < parts.length - 1) {
+                        const nextPart = parts[index + 1] || '';
+                        const delay = Math.min(Math.max(nextPart.length * 50, 1000), 4000);
+                        try { await chat.sendStateTyping(); } catch (_) {}
+                        await new Promise(r => setTimeout(r, delay));
+                    }
+                }
+
+                try { await chat.clearState(); } catch (_) {}
+
+                // Enviar foto si la IA lo decidió
+                if (shouldSendPhoto) {
+                    const count = getPhotoCount(sessionId);
+                    if (count > 0) {
+                        await new Promise(r => setTimeout(r, 1500));
+                        await sendWaitressPhoto(session.client, lastMessage.from, sessionId);
+                    } else {
+                        console.log(`[${sessionId}] ⚠️ IA quiso enviar foto pero no hay fotos en waitresses/photos/${sessionId}/`);
+                    }
+                }
+
+                // 30% sticker al final (solo si no se envió foto)
+                if (!shouldSendPhoto && Math.random() < 0.3) {
+                    await new Promise(r => setTimeout(r, 1000));
+                    await sendRandomSticker(session.client, lastMessage.from);
+                }
+
+            } catch (err) {
+                console.error(`[${sessionId}] Error replying:`, err.message);
+            }
+        }, DEBOUNCE_MS);
     });
+
 
     client.initialize();
 

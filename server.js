@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { createSession, getAllSessions, sendMessage, removeSession } = require('./SessionManager');
 const { getFicha } = require('./AppointmentService');
-const { createWaitress, getAllWaitresses, deleteWaitress, saveWaitress } = require('./WaitressService');
+const { createWaitress, loadWaitress, getAllWaitresses, deleteWaitress, saveWaitress } = require('./WaitressService');
 const { loadPromotions, savePromotions, togglePromotion } = require('./PromotionService');
 
 const app = express();

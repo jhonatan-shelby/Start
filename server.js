@@ -6,7 +6,7 @@ const cookieParser = require('cookie-parser');
 const { createSession, getAllSessions, sendMessage, removeSession } = require('./SessionManager');
 const { getFicha } = require('./AppointmentService');
 const { createWaitress, loadWaitress, getAllWaitresses, deleteWaitress, saveWaitress } = require('./WaitressService');
-const { loadPromotions, savePromotions, togglePromotion } = require('./PromotionService');
+const { loadPromotions, savePromotions, getPublicPromotions, togglePromotion } = require('./PromotionService');
 const AuthService = require('./auth/AuthService');
 const { requireAuth, requirePermission, requireOwnWaitressOrPermission } = require('./middleware/authMiddleware');
 const { PERMISSIONS, ROLES } = require('./middleware/permissions');
@@ -86,6 +86,21 @@ app.post('/auth/logout', (req, res) => {
 
 app.get('/auth/me', requireAuth, (req, res) => {
     res.json({ user: req.user });
+});
+
+// Cambio agregado: rutas publicas sin login y sin datos internos del sistema.
+app.get('/public/promotions', (req, res) => {
+    res.json({ promotions: getPublicPromotions() });
+});
+
+app.get('/public/info', (req, res) => {
+    res.json({
+        name: 'Start Nightclub',
+        description: 'Chatbot IA para atencion e informacion general del nightclub.',
+        publicSchedule: 'Horario sujeto a programacion del nightclub.',
+        publicLocation: 'Disponible por canales oficiales del negocio.',
+        welcomeMessage: 'Bienvenido a Start. Consulta nuestras promociones publicas y novedades.'
+    });
 });
 
 // ─────────────────────────────────────────────
@@ -275,9 +290,12 @@ app.post('/promotions/toggle', requirePermission(PERMISSIONS.PROMOTIONS_PUBLISH)
 app.post('/promotions', requirePermission(PERMISSIONS.PROMOTIONS_WRITE), (req, res) => {
     const promos = loadPromotions();
     const { id, title, description, isActive } = req.body;
+    const hasPublicField = Object.prototype.hasOwnProperty.call(req.body, 'public') ||
+        Object.prototype.hasOwnProperty.call(req.body, 'publica');
+    const publicValue = Object.prototype.hasOwnProperty.call(req.body, 'public') ? req.body.public : req.body.publica;
 
-    if (req.user.role !== ROLES.ADMIN && isActive !== undefined) {
-        // Cambio agregado: manager puede editar contenido, pero no publicar/despublicar promociones.
+    if (req.user.role !== ROLES.ADMIN && (isActive !== undefined || hasPublicField)) {
+        // Cambio agregado: manager puede editar contenido, pero no publicar ni cambiar visibilidad publica.
         return res.status(403).json({ error: 'Solo admin puede publicar promociones' });
     }
     
@@ -286,8 +304,15 @@ app.post('/promotions', requirePermission(PERMISSIONS.PROMOTIONS_WRITE), (req, r
         existing.title = title || existing.title;
         existing.description = description || existing.description;
         existing.isActive = isActive !== undefined ? isActive : existing.isActive;
+        existing.public = hasPublicField ? publicValue === true : existing.public;
     } else {
-        promos.active.push({ id, title, description, isActive: isActive || false });
+        promos.active.push({
+            id,
+            title,
+            description,
+            isActive: isActive || false,
+            public: req.user.role === ROLES.ADMIN && hasPublicField ? publicValue === true : false
+        });
     }
     
     savePromotions(promos);

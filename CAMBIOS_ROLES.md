@@ -16,3 +16,15 @@
 - Gestion futura de usuarios/roles queda preparada en permisos: solo `admin` tendra permiso para crear/modificar roles admin.
 - Para probar 401: llamar un endpoint sensible, por ejemplo `GET /sessions`, sin cookie de login.
 - Para probar 403: iniciar sesion como `manager` o `waitress` y llamar una ruta no permitida, por ejemplo `POST /sessions/create`.
+
+## Sub-tarea 3: rutas publicas y promociones publicas
+
+- Se agrego `GET /public/promotions` sin login; filtra en backend y devuelve solo promociones con `public: true`.
+- Se agrego `GET /public/info` sin login; devuelve solo nombre, descripcion general, horario publico, ubicacion publica generica y mensaje de bienvenida.
+- `/public/info` no expone tokens, sesiones WhatsApp, fichas/clientes, telefonos privados, conversaciones, variables de entorno ni configuracion critica.
+- `PromotionService.js` normaliza promociones existentes y nuevas con `public: false` por defecto para evitar exposicion accidental.
+- El endpoint administrativo `/promotions` sigue protegido y devuelve todas las promociones, publicas y privadas.
+- `admin` puede cambiar `public`/`publica` e `isActive`; `manager` puede crear/editar contenido, pero no publicar ni cambiar visibilidad publica; `waitress` no gestiona promociones.
+- Archivos modificados en esta fase: `server.js`, `PromotionService.js` y `CAMBIOS_ROLES.md`.
+- Para probar rutas publicas: llamar `GET /public/promotions` y `GET /public/info` sin cookie de login.
+- Para probar proteccion administrativa: llamar `GET /promotions` sin login y debe responder 401; iniciar sesion como `manager` e intentar enviar `public: true` o `isActive` a `POST /promotions` y debe responder 403.

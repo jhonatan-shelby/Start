@@ -3,20 +3,35 @@ const path = require('path');
 
 const PROMO_FILE = path.join(__dirname, 'promotions.json');
 
+function normalizePromotion(promo) {
+    return {
+        ...promo,
+        // Cambio agregado: las promociones existentes quedan privadas hasta aprobacion admin.
+        public: promo.public === true || promo.publica === true
+    };
+}
+
+function normalizePromotions(promos) {
+    return {
+        active: Array.isArray(promos.active) ? promos.active.map(normalizePromotion) : [],
+        history: Array.isArray(promos.history) ? promos.history.map(normalizePromotion) : []
+    };
+}
+
 /**
  * Handle active promotions
  */
 function loadPromotions() {
     if (!fs.existsSync(PROMO_FILE)) {
-        return {
+        return normalizePromotions({
             active: [
-                { id: 'happyhour', title: 'Happy Hour', description: '2x1 en botellas hasta las 23:00', isActive: true },
-                { id: 'blackfriday', title: 'Black Friday', description: '30% descuento en mesas VIP', isActive: false }
+                { id: 'happyhour', title: 'Happy Hour', description: '2x1 en botellas hasta las 23:00', isActive: true, public: false },
+                { id: 'blackfriday', title: 'Black Friday', description: '30% descuento en mesas VIP', isActive: false, public: false }
             ],
             history: []
-        };
+        });
     }
-    return JSON.parse(fs.readFileSync(PROMO_FILE, 'utf8'));
+    return normalizePromotions(JSON.parse(fs.readFileSync(PROMO_FILE, 'utf8')));
 }
 
 function savePromotions(promos) {
@@ -31,6 +46,18 @@ function getActivePromotionTexts() {
         .join('\n');
 }
 
+function getPublicPromotions() {
+    return loadPromotions().active
+        .filter(p => p.public === true)
+        .map(({ id, title, description, isActive, public: isPublic }) => ({
+            id,
+            title,
+            description,
+            isActive,
+            public: isPublic
+        }));
+}
+
 function togglePromotion(id, isActive) {
     const promos = loadPromotions();
     const p = promos.active.find(x => x.id === id);
@@ -42,4 +69,4 @@ function togglePromotion(id, isActive) {
     return { error: `Promotion '${id}' not found` };
 }
 
-module.exports = { loadPromotions, savePromotions, getActivePromotionTexts, togglePromotion };
+module.exports = { loadPromotions, savePromotions, getActivePromotionTexts, getPublicPromotions, togglePromotion };

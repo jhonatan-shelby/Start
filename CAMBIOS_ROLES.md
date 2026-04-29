@@ -28,3 +28,17 @@
 - Archivos modificados en esta fase: `server.js`, `PromotionService.js` y `CAMBIOS_ROLES.md`.
 - Para probar rutas publicas: llamar `GET /public/promotions` y `GET /public/info` sin cookie de login.
 - Para probar proteccion administrativa: llamar `GET /promotions` sin login y debe responder 401; iniciar sesion como `manager` e intentar enviar `public: true` o `isActive` a `POST /promotions` y debe responder 403.
+
+## Sub-tarea 4: frontend publico, login/logout y vista por rol
+
+- Se actualizo `public/index.html` para mostrar primero una vista publica sin login con datos de `GET /public/info` y `GET /public/promotions`.
+- El visitante publico solo ve informacion general y promociones publicas; no ve clientes, fichas, sesiones WhatsApp, estadisticas internas, configuracion ni acciones administrativas.
+- Se agrego formulario de login contra `POST /auth/login`; el frontend no guarda JWT en `localStorage` ni `sessionStorage`, usa la cookie httpOnly del backend.
+- Tras login correcto se consulta `GET /auth/me` para cargar usuario y rol.
+- Se agrego logout contra `POST /auth/logout`; al cerrar sesion se limpia el estado visual y vuelve la vista publica.
+- Admin ve el panel completo: camareras, clientes/fichas, promociones administrativas, conexion WhatsApp, eliminar camareras y recap IA.
+- Manager ve camareras en consulta, clientes/fichas, promociones administrativas y recap IA; no ve controles de WhatsApp ni eliminar/crear/editar camareras.
+- Waitress ve solo una vista propia basica y recap propio si su usuario tiene `waitressId`; no ve clientes globales, promociones, sesiones WhatsApp ni acciones administrativas.
+- Las respuestas 401 vuelven al estado no autenticado con mensaje simple; las respuestas 403 muestran permiso insuficiente sin romper la interfaz.
+- La seguridad real sigue estando en backend; el frontend solo oculta controles visuales por comodidad y claridad.
+- Archivo modificado en esta fase: `public/index.html` y este documento.

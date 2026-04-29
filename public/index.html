@@ -48,46 +48,95 @@
 </head>
 <body class="min-h-screen flex overflow-hidden">
 
+    <!-- Vista publica/login agregada: no muestra datos administrativos sin autenticacion. -->
+    <div id="public-view" class="flex-1 min-h-screen overflow-y-auto p-6 md:p-10">
+        <div class="max-w-6xl mx-auto">
+            <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">
+                <div>
+                    <h1 id="public-name" class="text-4xl md:text-5xl font-bold tracking-tighter neon-text text-pink-500 font-['Orbitron']">START</h1>
+                    <p id="public-description" class="text-sm text-gray-400 mt-3 max-w-2xl">Cargando informacion publica...</p>
+                </div>
+                <form id="login-form" class="glass neon-border p-5 rounded-2xl w-full md:w-96">
+                    <h2 class="font-bold font-['Orbitron'] text-lg mb-4">Acceso administrativo</h2>
+                    <div class="space-y-3">
+                        <input id="login-email" type="email" placeholder="Email" autocomplete="username" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm focus:border-pink-500 outline-none">
+                        <input id="login-password" type="password" placeholder="Password" autocomplete="current-password" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-sm focus:border-pink-500 outline-none">
+                        <button type="submit" class="w-full bg-pink-600 hover:bg-pink-500 p-3 rounded-lg font-bold font-['Orbitron']">Entrar</button>
+                        <p id="login-message" class="text-xs text-red-400 min-h-[1rem]"></p>
+                    </div>
+                </form>
+            </header>
+
+            <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+                <div class="glass neon-border-blue p-6 rounded-2xl">
+                    <h3 class="text-xs uppercase tracking-widest text-blue-400 mb-2">Horario</h3>
+                    <p id="public-schedule" class="text-sm text-gray-300">-</p>
+                </div>
+                <div class="glass neon-border-blue p-6 rounded-2xl">
+                    <h3 class="text-xs uppercase tracking-widest text-blue-400 mb-2">Ubicacion</h3>
+                    <p id="public-location" class="text-sm text-gray-300">-</p>
+                </div>
+                <div class="glass neon-border-blue p-6 rounded-2xl">
+                    <h3 class="text-xs uppercase tracking-widest text-blue-400 mb-2">Mensaje</h3>
+                    <p id="public-welcome" class="text-sm text-gray-300">-</p>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-2xl font-bold font-['Orbitron'] mb-5">Promociones <span class="text-purple-400">publicas</span></h2>
+                <div id="public-promotions-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="animate-pulse bg-gray-800/50 h-36 rounded-2xl"></div>
+                </div>
+            </section>
+        </div>
+    </div>
+
     <!-- Sidebar -->
-    <aside class="w-64 glass border-r border-gray-800 flex flex-col z-20">
+    <aside id="app-sidebar" class="hidden w-64 glass border-r border-gray-800 flex-col z-20">
         <div class="p-6">
             <h1 class="text-2xl font-bold tracking-tighter neon-text text-pink-500 font-['Orbitron']">NIGHTCLUB</h1>
             <p class="text-[10px] text-gray-500 tracking-widest uppercase">Management System</p>
         </div>
         
         <nav class="flex-1 mt-6">
-            <div onclick="showSection('waitresses')" class="sidebar-item active p-4 flex items-center cursor-pointer transition-all">
+            <div id="nav-waitresses" onclick="showSection('waitresses')" class="sidebar-item active p-4 flex items-center cursor-pointer transition-all">
                 <i data-lucide="users" class="w-5 h-5 mr-3 text-pink-500"></i>
                 <span class="text-sm font-medium">Camareras</span>
             </div>
-            <div onclick="showSection('clients')" class="sidebar-item p-4 flex items-center cursor-pointer transition-all">
+            <div id="nav-clients" onclick="showSection('clients')" class="sidebar-item p-4 flex items-center cursor-pointer transition-all">
                 <i data-lucide="contact" class="w-5 h-5 mr-3 text-blue-400"></i>
                 <span class="text-sm font-medium">Clientes (CRM)</span>
             </div>
-            <div onclick="showSection('promotions')" class="sidebar-item p-4 flex items-center cursor-pointer transition-all">
+            <div id="nav-promotions" onclick="showSection('promotions')" class="sidebar-item p-4 flex items-center cursor-pointer transition-all">
                 <i data-lucide="ticket-percent" class="w-5 h-5 mr-3 text-purple-400"></i>
                 <span class="text-sm font-medium">Promociones</span>
             </div>
         </nav>
 
         <div class="p-6 border-t border-gray-800">
-            <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 rounded-full bg-pink-600 flex items-center justify-center font-bold">G</div>
-                <div>
-                    <p class="text-xs font-bold">Gabriel</p>
-                    <p class="text-[10px] text-green-500">Online</p>
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center space-x-3 min-w-0">
+                    <div id="user-avatar" class="w-8 h-8 rounded-full bg-pink-600 flex items-center justify-center font-bold">U</div>
+                    <div>
+                        <p id="user-email" class="text-xs font-bold truncate max-w-[120px]">Usuario</p>
+                        <p id="user-role" class="text-[10px] text-green-500 uppercase">Online</p>
+                    </div>
                 </div>
+                <button onclick="logout()" title="Cerrar sesion" class="text-gray-500 hover:text-white">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                </button>
             </div>
         </div>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto p-8 relative">
+    <main id="admin-panel" class="hidden flex-1 overflow-y-auto p-8 relative">
+        <div id="app-message" class="hidden mb-6 p-3 rounded-lg border text-sm"></div>
         <!-- Section Waitresses -->
         <section id="waitresses-section">
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-bold font-['Orbitron']">Gestión de <span class="text-pink-500">Camareras</span></h2>
-                <button onclick="openAddModal()" class="bg-pink-600 hover:bg-pink-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center transition-all shadow-lg shadow-pink-900/20">
+                <button id="new-waitress-button" onclick="openAddModal()" class="bg-pink-600 hover:bg-pink-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center transition-all shadow-lg shadow-pink-900/20">
                     <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Nueva Camarera
                 </button>
             </div>
@@ -248,8 +297,174 @@
         lucide.createIcons();
         const API_URL = 'http://localhost:3000';
         let qrGenerator = null;
+        let currentUser = null;
+
+        const roleAccess = {
+            admin: ['waitresses', 'clients', 'promotions'],
+            manager: ['waitresses', 'clients', 'promotions'],
+            waitress: ['waitresses']
+        };
+
+        function canAccessSection(id) {
+            return currentUser && (roleAccess[currentUser.role] || []).includes(id);
+        }
+
+        function isAdmin() {
+            return currentUser?.role === 'admin';
+        }
+
+        function isManager() {
+            return currentUser?.role === 'manager';
+        }
+
+        function isWaitress() {
+            return currentUser?.role === 'waitress';
+        }
+
+        function showMessage(message, type = 'info') {
+            const box = document.getElementById('app-message');
+            box.innerText = message;
+            box.className = `mb-6 p-3 rounded-lg border text-sm ${type === 'error' ? 'border-red-500/40 bg-red-950/30 text-red-300' : 'border-blue-500/40 bg-blue-950/30 text-blue-300'}`;
+            box.classList.remove('hidden');
+            setTimeout(() => box.classList.add('hidden'), 4500);
+        }
+
+        function handleProtectedError(status) {
+            if (status === 401) {
+                // Cambio agregado: 401 limpia solo el estado visual; el token vive en cookie httpOnly.
+                currentUser = null;
+                setPublicState('Sesion no iniciada o expirada.');
+                return true;
+            }
+            if (status === 403) {
+                showMessage('Permiso insuficiente para esta accion.', 'error');
+                return true;
+            }
+            return false;
+        }
+
+        async function apiFetch(url, options = {}) {
+            const res = await fetch(url, { credentials: 'include', ...options });
+            if (!res.ok && handleProtectedError(res.status)) {
+                return null;
+            }
+            return res;
+        }
+
+        function getFirstAllowedSection() {
+            return (roleAccess[currentUser?.role] || ['waitresses'])[0];
+        }
+
+        function setPublicState(message = '') {
+            document.getElementById('public-view').classList.remove('hidden');
+            document.getElementById('app-sidebar').classList.add('hidden');
+            document.getElementById('app-sidebar').classList.remove('flex');
+            document.getElementById('admin-panel').classList.add('hidden');
+            document.getElementById('login-message').innerText = message;
+            loadPublicView();
+        }
+
+        function setAuthenticatedState(user) {
+            currentUser = user;
+            document.getElementById('public-view').classList.add('hidden');
+            document.getElementById('app-sidebar').classList.remove('hidden');
+            document.getElementById('app-sidebar').classList.add('flex');
+            document.getElementById('admin-panel').classList.remove('hidden');
+            document.getElementById('user-email').innerText = user.email;
+            document.getElementById('user-role').innerText = user.role;
+            document.getElementById('user-avatar').innerText = (user.email || 'U')[0].toUpperCase();
+
+            // Cambio agregado: control visual por rol; backend sigue siendo la seguridad real.
+            document.getElementById('nav-clients').classList.toggle('hidden', !canAccessSection('clients'));
+            document.getElementById('nav-promotions').classList.toggle('hidden', !canAccessSection('promotions'));
+            document.getElementById('new-waitress-button').classList.toggle('hidden', !isAdmin());
+            showSection(getFirstAllowedSection());
+            lucide.createIcons();
+        }
+
+        async function loadPublicView() {
+            try {
+                const [infoRes, promosRes] = await Promise.all([
+                    fetch(`${API_URL}/public/info`),
+                    fetch(`${API_URL}/public/promotions`)
+                ]);
+                const info = await infoRes.json();
+                const promos = await promosRes.json();
+
+                document.getElementById('public-name').innerText = info.name || 'Start Nightclub';
+                document.getElementById('public-description').innerText = info.description || '';
+                document.getElementById('public-schedule').innerText = info.publicSchedule || '-';
+                document.getElementById('public-location').innerText = info.publicLocation || '-';
+                document.getElementById('public-welcome').innerText = info.welcomeMessage || '-';
+
+                const container = document.getElementById('public-promotions-list');
+                container.innerHTML = '';
+                if (!promos.promotions || promos.promotions.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-gray-500">No hay promociones publicas disponibles.</p>';
+                    return;
+                }
+
+                promos.promotions.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'glass p-6 rounded-2xl border border-purple-500/40';
+                    card.innerHTML = `
+                        <h3 class="font-bold text-lg mb-2">${p.title}</h3>
+                        <p class="text-sm text-gray-400">${p.description}</p>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                document.getElementById('public-description').innerText = 'No se pudo cargar la informacion publica.';
+            }
+        }
+
+        async function loadCurrentUser() {
+            const res = await fetch(`${API_URL}/auth/me`, { credentials: 'include' });
+            if (!res.ok) {
+                setPublicState();
+                return;
+            }
+            const data = await res.json();
+            setAuthenticatedState(data.user);
+        }
+
+        async function login(event) {
+            event.preventDefault();
+            document.getElementById('login-message').innerText = '';
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (!res.ok) {
+                    document.getElementById('login-message').innerText = 'Credenciales invalidas.';
+                    return;
+                }
+
+                await loadCurrentUser();
+            } catch (err) {
+                document.getElementById('login-message').innerText = 'No se pudo iniciar sesion.';
+            }
+        }
+
+        async function logout() {
+            await fetch(`${API_URL}/auth/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});
+            currentUser = null;
+            setPublicState();
+        }
 
         function showSection(id) {
+            if (!canAccessSection(id)) {
+                showMessage('Permiso insuficiente para ver esta seccion.', 'error');
+                return;
+            }
             ['waitresses', 'clients', 'promotions'].forEach(s => {
                 document.getElementById(`${s}-section`).classList.add('hidden');
                 const sidebarItem = document.querySelector(`[onclick="showSection('${s}')"]`);
@@ -265,8 +480,13 @@
         }
 
         async function viewFicha(phone) {
+            if (!isAdmin() && !isManager()) {
+                showMessage('Permiso insuficiente para ver clientes.', 'error');
+                return;
+            }
             const rawPhone = phone.replace('+', '');
-            const res = await fetch(`${API_URL}/fichas/${rawPhone}`);
+            const res = await apiFetch(`${API_URL}/fichas/${rawPhone}`);
+            if (!res) return;
             const f = await res.json();
             
             document.getElementById('modal-client-name').innerText = f.name || 'Sin Nombre';
@@ -322,7 +542,13 @@
 
         // --- Waitresses Logic ---
         async function fetchWaitresses() {
-            const res = await fetch(`${API_URL}/waitresses`);
+            if (isWaitress()) {
+                renderOwnWaitressView();
+                return;
+            }
+
+            const res = await apiFetch(`${API_URL}/waitresses`);
+            if (!res) return;
             const data = await res.json();
             const container = document.getElementById('waitress-list');
             container.innerHTML = '';
@@ -345,12 +571,12 @@
                             ${w.whatsapp ? `<a href="https://wa.me/${w.whatsapp.replace(/\D/g,'')}" target="_blank" class="hover:text-green-500"><i data-lucide="phone" class="w-4 h-4"></i></a>` : ''}
                             ${w.instagram ? `<a href="https://instagram.com/${w.instagram.replace('@','')}" target="_blank" class="hover:text-pink-500"><i data-lucide="instagram" class="w-4 h-4"></i></a>` : ''}
                             ${w.facebook ? `<a href="${w.facebook}" target="_blank" class="hover:text-blue-500"><i data-lucide="facebook" class="w-4 h-4"></i></a>` : ''}
-                            <button onclick="openEditModal('${w.id}')" class="hover:text-blue-400 transition-colors">
+                            ${isAdmin() ? `<button onclick="openEditModal('${w.id}')" class="hover:text-blue-400 transition-colors">
                                 <i data-lucide="edit-3" class="w-4 h-4"></i>
                             </button>
                             <button onclick="deleteWaitress('${w.id}')" class="hover:text-red-500 transition-colors">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
+                            </button>` : ''}
                         </div>
                     </div>
                     <h3 class="font-bold text-lg mb-1">${w.name}</h3>
@@ -359,10 +585,10 @@
                     <div class="flex items-center ${statusColor} text-xs font-bold mb-6">
                         <i data-lucide="${statusIcon}" class="w-3 h-3 mr-1"></i>
                         ${w.sessionStatus.toUpperCase()}
-                        ${w.sessionStatus === 'offline' ? `<button onclick="connectWaitress('${w.id}')" class="ml-2 text-pink-500 hover:underline text-[10px]">Conectar</button>` : ''}
+                        ${isAdmin() && w.sessionStatus === 'offline' ? `<button onclick="connectWaitress('${w.id}')" class="ml-2 text-pink-500 hover:underline text-[10px]">Conectar</button>` : ''}
                     </div>
 
-                    ${w.sessionStatus === 'qr' ? 
+                    ${isAdmin() && w.sessionStatus === 'qr' ? 
                         `<button onclick="showQR('${w.name}', '${w.qr}')" class="w-full bg-pink-600 hover:bg-pink-500 text-white p-2 rounded-lg text-xs font-bold transition-all font-['Orbitron']">Ver QR</button>` :
                         `<div class="space-y-3">
                             <div class="grid grid-cols-3 gap-2">
@@ -390,8 +616,26 @@
             lucide.createIcons();
         }
 
+        function renderOwnWaitressView() {
+            const container = document.getElementById('waitress-list');
+            const title = currentUser.waitressId ? `Perfil asignado: ${currentUser.waitressId}` : 'Perfil sin camarera asignada';
+            container.innerHTML = `
+                <div class="glass neon-border p-6 rounded-2xl">
+                    <h3 class="font-bold text-lg mb-2">${title}</h3>
+                    <p class="text-sm text-gray-400 mb-4">Tu usuario no tiene acceso a clientes globales, sesiones WhatsApp ni promociones administrativas.</p>
+                    ${currentUser.waitressId ? `<button onclick="generateRecap('${currentUser.waitressId}', '${currentUser.waitressId}')" class="bg-gray-800 hover:bg-gray-700 border border-pink-500/20 text-pink-500 px-4 py-2 rounded-lg text-xs font-bold">Ver recap propio</button>` : ''}
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
         async function openEditModal(id) {
-            const res = await fetch(`${API_URL}/waitresses`);
+            if (!isAdmin()) {
+                showMessage('Solo admin puede editar camareras.', 'error');
+                return;
+            }
+            const res = await apiFetch(`${API_URL}/waitresses`);
+            if (!res) return;
             const all = await res.json();
             const w = all.find(item => item.id === id);
             if (!w) return;
@@ -412,6 +656,10 @@
         }
 
         function openAddModal() {
+            if (!isAdmin()) {
+                showMessage('Solo admin puede crear camareras.', 'error');
+                return;
+            }
             document.getElementById('modal-waitress-title').innerText = 'Añadir Nueva Camarera';
             document.getElementById('waitress-edit-id').value = '';
             document.getElementById('id-input-container').classList.remove('hidden');
@@ -429,6 +677,10 @@
         }
 
         async function saveWaitressData() {
+            if (!isAdmin()) {
+                showMessage('Solo admin puede guardar camareras.', 'error');
+                return;
+            }
             const editId = document.getElementById('waitress-edit-id').value;
             const data = {
                 name: document.getElementById('waitress-name').value,
@@ -442,20 +694,22 @@
 
             if (editId) {
                 // UPDATE
-                await fetch(`${API_URL}/waitresses/${editId}`, {
+                const res = await apiFetch(`${API_URL}/waitresses/${editId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
+                if (!res) return;
             } else {
                 // CREATE
                 data.id = document.getElementById('waitress-id').value;
                 if (!data.id || !data.name) return alert('ID y Nombre son obligatorios');
-                await fetch(`${API_URL}/waitresses`, {
+                const res = await apiFetch(`${API_URL}/waitresses`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
+                if (!res) return;
             }
 
             closeModal('addWaitressModal');
@@ -483,13 +737,23 @@
         });
 
         async function connectWaitress(id) {
-            await fetch(`${API_URL}/waitresses/${id}/connect`, { method: 'POST' });
+            if (!isAdmin()) {
+                showMessage('Solo admin puede conectar WhatsApp.', 'error');
+                return;
+            }
+            const res = await apiFetch(`${API_URL}/waitresses/${id}/connect`, { method: 'POST' });
+            if (!res) return;
             fetchWaitresses();
         }
 
         async function deleteWaitress(id) {
+            if (!isAdmin()) {
+                showMessage('Solo admin puede eliminar camareras.', 'error');
+                return;
+            }
             if (!confirm('¿Eliminar a esta camarera?')) return;
-            await fetch(`${API_URL}/waitresses/${id}`, { method: 'DELETE' });
+            const res = await apiFetch(`${API_URL}/waitresses/${id}`, { method: 'DELETE' });
+            if (!res) return;
             fetchWaitresses();
         }
 
@@ -510,6 +774,10 @@
         }
 
         async function generateRecap(id, name) {
+            if (isWaitress() && currentUser.waitressId !== id) {
+                showMessage('Solo puedes ver tu recap propio.', 'error');
+                return;
+            }
             document.getElementById('recap-waitress-name').innerText = name;
             document.getElementById('recap-content').innerHTML = `
                 <div class="animate-pulse flex flex-col space-y-3">
@@ -523,7 +791,8 @@
             lucide.createIcons();
             
             try {
-                const res = await fetch(`${API_URL}/waitresses/${id}/recap`);
+                const res = await apiFetch(`${API_URL}/waitresses/${id}/recap`);
+                if (!res) return;
                 const data = await res.json();
                 document.getElementById('recap-content').innerText = data.recap || 'No se pudo generar el análisis.';
             } catch (err) {
@@ -532,7 +801,12 @@
         }
 
         async function fetchClients() {
-            const res = await fetch(`${API_URL}/fichas`);
+            if (!isAdmin() && !isManager()) {
+                showMessage('Permiso insuficiente para ver clientes.', 'error');
+                return;
+            }
+            const res = await apiFetch(`${API_URL}/fichas`);
+            if (!res) return;
             const data = await res.json();
             const container = document.getElementById('client-list');
             container.innerHTML = '';
@@ -575,7 +849,12 @@
 
         // --- Promotions Logic ---
         async function fetchPromotions() {
-            const res = await fetch(`${API_URL}/promotions`);
+            if (!isAdmin() && !isManager()) {
+                showMessage('Permiso insuficiente para ver promociones administrativas.', 'error');
+                return;
+            }
+            const res = await apiFetch(`${API_URL}/promotions`);
+            if (!res) return;
             const data = await res.json();
             const container = document.getElementById('promotions-list');
             container.innerHTML = '';
@@ -587,10 +866,10 @@
                 card.innerHTML = `
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-lg">${p.title}</h3>
-                        <div class="relative inline-flex items-center cursor-pointer">
+                        ${isAdmin() ? `<div class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" ${p.isActive ? 'checked' : ''} onchange="togglePromo('${p.id}', this.checked)" class="sr-only peer">
                             <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                        </div>
+                        </div>` : `<span class="text-[10px] uppercase text-gray-500">${p.isActive ? 'Activa' : 'Inactiva'}</span>`}
                     </div>
                     <p class="text-sm text-gray-400 italic mb-4">"${p.description}"</p>
                     <div class="flex items-center text-[10px] uppercase font-bold text-gray-600">
@@ -604,16 +883,23 @@
         }
 
         async function togglePromo(id, isActive) {
-            await fetch(`${API_URL}/promotions/toggle`, {
+            if (!isAdmin()) {
+                showMessage('Solo admin puede publicar promociones.', 'error');
+                return;
+            }
+            const res = await apiFetch(`${API_URL}/promotions/toggle`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, isActive })
             });
+            if (!res) return;
             fetchPromotions();
         }
 
         // Initial fetch
-        fetchWaitresses();
+        document.getElementById('login-form').addEventListener('submit', login);
+        loadPublicView();
+        loadCurrentUser();
 
     </script>
 </body>

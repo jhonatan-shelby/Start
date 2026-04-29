@@ -1,0 +1,10 @@
+[
+  {
+    "id": "admin-example",
+    "email": "admin@example.com",
+    "passwordHash": "$2a$12$exampleHashOnlyDoNotUse",
+    "role": "admin",
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-01-01T00:00:00.000Z"
+  }
+]

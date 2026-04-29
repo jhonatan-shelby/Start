@@ -1,3 +1,4 @@
+
 .wwebjs_auth
 .wwebjs_cache
 node_modules
@@ -5,4 +6,5 @@ node_modules
 fichas/
 waitresses/
 stickers/
-promotions.json
+promotions.json
+data/users.json

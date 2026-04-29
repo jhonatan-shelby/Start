@@ -1,10 +1,20 @@
+require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 const { createSession, getAllSessions, sendMessage, removeSession } = require('./SessionManager');
 const { getFicha } = require('./AppointmentService');
 const { createWaitress, loadWaitress, getAllWaitresses, deleteWaitress, saveWaitress } = require('./WaitressService');
 const { loadPromotions, savePromotions, togglePromotion } = require('./PromotionService');
+const AuthService = require('./auth/AuthService');
+const { authMiddleware } = require('./middleware/authMiddleware');
+
+if (!process.env.JWT_SECRET) {
+    // Cambio agregado: el servidor no arranca sin secreto JWT configurado.
+    console.error('[Auth] Error: falta JWT_SECRET en .env. Configuralo antes de iniciar el servidor.');
+    process.exit(1);
+}
 
 // ─────────────────────────────────────────────
 // Protección global contra crashes de Puppeteer
@@ -36,10 +46,46 @@ process.on('uncaughtException', (err) => {
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
+app.use(cookieParser());
 app.use(express.static('public'));
 const PORT = 3000;
 
 // app.use(express.json()); // Removed redundant line
+
+// Cambio agregado: endpoints base de autenticacion con JWT en cookie httpOnly.
+app.post('/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email y password son requeridos' });
+        }
+
+        const session = await AuthService.login(email, password);
+        if (!session) {
+            return res.status(401).json({ error: 'Credenciales invalidas' });
+        }
+
+        res.cookie(AuthService.AUTH_COOKIE_NAME, session.token, AuthService.getCookieOptions());
+        res.json({ success: true, user: session.user });
+    } catch (err) {
+        console.error('[Auth] Error en login:', err);
+        res.status(500).json({ error: 'No se pudo iniciar sesion' });
+    }
+});
+
+app.post('/auth/logout', (req, res) => {
+    res.clearCookie(AuthService.AUTH_COOKIE_NAME, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production'
+    });
+    res.json({ success: true });
+});
+
+app.get('/auth/me', authMiddleware, (req, res) => {
+    res.json({ user: req.user });
+});
 
 // ─────────────────────────────────────────────
 // GET /sessions → Lista todas las sesiones activas
@@ -245,11 +291,25 @@ app.post('/promotions', (req, res) => {
 // ─────────────────────────────────────────────
 // Iniciar servidor
 // ─────────────────────────────────────────────
-app.listen(PORT, () => {
+async function startServer() {
+    // Cambio agregado: prepara users.json y si aplica crea el admin inicial antes de escuchar.
+    await AuthService.initialize();
+
+    app.listen(PORT, () => {
     console.log(`\n🚀 WhatsApp Session Manager running on http://localhost:${PORT}`);
     console.log(`\nEndpoints disponibles:`);
+    console.log(`  POST   /auth/login              -> Iniciar sesion admin`);
+    console.log(`  POST   /auth/logout             -> Cerrar sesion admin`);
+    console.log(`  GET    /auth/me                 -> Ver usuario autenticado`);
     console.log(`  GET    /sessions               → Ver sesiones activas`);
     console.log(`  POST   /sessions/create         → Crear nueva sesión`);
     console.log(`  POST   /sessions/:id/send       → Enviar mensaje`);
     console.log(`  DELETE /sessions/:id            → Eliminar sesión\n`);
+
+    });
+}
+
+startServer().catch((err) => {
+    console.error('[Server] Error al iniciar:', err.message);
+    process.exit(1);
 });

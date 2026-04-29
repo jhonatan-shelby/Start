@@ -43,11 +43,18 @@ function writeUsers(users) {
 }
 
 function getPublicUser(user) {
-    return {
+    const publicUser = {
         id: user.id,
         email: user.email,
         role: user.role
     };
+
+    if (user.waitressId) {
+        // Cambio agregado: permite asociar usuarios waitress con su perfil sin exponer secretos.
+        publicUser.waitressId = user.waitressId;
+    }
+
+    return publicUser;
 }
 
 function getJwtSecret() {

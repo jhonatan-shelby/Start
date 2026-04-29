@@ -8,7 +8,8 @@ const { getFicha } = require('./AppointmentService');
 const { createWaitress, loadWaitress, getAllWaitresses, deleteWaitress, saveWaitress } = require('./WaitressService');
 const { loadPromotions, savePromotions, togglePromotion } = require('./PromotionService');
 const AuthService = require('./auth/AuthService');
-const { authMiddleware } = require('./middleware/authMiddleware');
+const { requireAuth, requirePermission, requireOwnWaitressOrPermission } = require('./middleware/authMiddleware');
+const { PERMISSIONS, ROLES } = require('./middleware/permissions');
 
 if (!process.env.JWT_SECRET) {
     // Cambio agregado: el servidor no arranca sin secreto JWT configurado.
@@ -83,14 +84,14 @@ app.post('/auth/logout', (req, res) => {
     res.json({ success: true });
 });
 
-app.get('/auth/me', authMiddleware, (req, res) => {
+app.get('/auth/me', requireAuth, (req, res) => {
     res.json({ user: req.user });
 });
 
 // ─────────────────────────────────────────────
 // GET /sessions → Lista todas las sesiones activas
 // ─────────────────────────────────────────────
-app.get('/sessions', (req, res) => {
+app.get('/sessions', requirePermission(PERMISSIONS.WHATSAPP_SESSIONS_MANAGE), (req, res) => {
     const sessions = getAllSessions();
     res.json({ sessions });
 });
@@ -99,7 +100,7 @@ app.get('/sessions', (req, res) => {
 // POST /sessions/create → Crea una nueva sesión
 // Body: { "id": "bot1" }
 // ─────────────────────────────────────────────
-app.post('/sessions/create', (req, res) => {
+app.post('/sessions/create', requirePermission(PERMISSIONS.WHATSAPP_SESSIONS_MANAGE), (req, res) => {
     const { id } = req.body;
     if (!id) return res.status(400).json({ error: 'Missing "id" in body' });
 
@@ -113,7 +114,7 @@ app.post('/sessions/create', (req, res) => {
 // POST /sessions/:id/send → Enviar un mensaje
 // Body: { "to": "573001234567", "message": "Hola" }
 // ─────────────────────────────────────────────
-app.post('/sessions/:id/send', async (req, res) => {
+app.post('/sessions/:id/send', requirePermission(PERMISSIONS.WHATSAPP_SESSIONS_MANAGE), async (req, res) => {
     const { id } = req.params;
     const { to, message } = req.body;
 
@@ -128,7 +129,7 @@ app.post('/sessions/:id/send', async (req, res) => {
 // ─────────────────────────────────────────────
 // DELETE /sessions/:id → Desconectar y eliminar sesión
 // ─────────────────────────────────────────────
-app.delete('/sessions/:id', async (req, res) => {
+app.delete('/sessions/:id', requirePermission(PERMISSIONS.WHATSAPP_SESSIONS_MANAGE), async (req, res) => {
     const { id } = req.params;
     const result = await removeSession(id);
     if (result.error) return res.status(404).json(result);
@@ -139,7 +140,7 @@ app.delete('/sessions/:id', async (req, res) => {
 // ─────────────────────────────────────────────
 // GET /fichas → Lista todas las fichas de clientes
 // ─────────────────────────────────────────────
-app.get('/fichas', (req, res) => {
+app.get('/fichas', requirePermission(PERMISSIONS.FICHAS_VIEW), (req, res) => {
     const fichasDir = path.join(__dirname, 'fichas');
     if (!fs.existsSync(fichasDir)) return res.json({ fichas: [] });
 
@@ -154,7 +155,7 @@ app.get('/fichas', (req, res) => {
 // ─────────────────────────────────────────────
 // GET /fichas/:phone → Ver ficha completa de un cliente
 // ─────────────────────────────────────────────
-app.get('/fichas/:phone', (req, res) => {
+app.get('/fichas/:phone', requirePermission(PERMISSIONS.FICHAS_VIEW), (req, res) => {
     const ficha = getFicha(req.params.phone);
     res.json(ficha);
 });
@@ -164,7 +165,7 @@ app.get('/fichas/:phone', (req, res) => {
 // ─────────────────────────────────────────────
 
 // GET /waitresses → List all waitresses
-app.get('/waitresses', (req, res) => {
+app.get('/waitresses', requirePermission(PERMISSIONS.WAITRESSES_VIEW), (req, res) => {
     const list = getAllWaitresses();
     const sessions = getAllSessions();
     
@@ -178,7 +179,7 @@ app.get('/waitresses', (req, res) => {
 });
 
 // POST /waitresses → Create waitress and her WhatsApp session
-app.post('/waitresses', async (req, res) => {
+app.post('/waitresses', requirePermission(PERMISSIONS.WAITRESSES_MANAGE), async (req, res) => {
     console.log('[API] 📨 POST /waitresses data received:', JSON.stringify(req.body).substring(0, 500));
     const { id, name, personality, instagram, facebook, whatsapp, schedule, imageUrl } = req.body;
     if (!id || !name) return res.status(400).json({ error: 'Missing id or name' });
@@ -201,7 +202,7 @@ app.post('/waitresses', async (req, res) => {
 });
 
 // POST /waitresses/:id/connect → Start session for existing waitress
-app.post('/waitresses/:id/connect', async (req, res) => {
+app.post('/waitresses/:id/connect', requirePermission(PERMISSIONS.WHATSAPP_SESSIONS_MANAGE), async (req, res) => {
     const id = req.params.id;
     const waitress = loadWaitress(id);
     if (!waitress) return res.status(404).json({ error: 'Waitress not found' });
@@ -211,7 +212,7 @@ app.post('/waitresses/:id/connect', async (req, res) => {
 });
 
 // PUT /waitresses/:id → Update waitress profile
-app.put('/waitresses/:id', (req, res) => {
+app.put('/waitresses/:id', requirePermission(PERMISSIONS.WAITRESSES_MANAGE), (req, res) => {
     console.log(`[API] 📝 PUT /waitresses/${req.params.id} updating...`);
     const id = req.params.id;
     const existing = loadWaitress(id);
@@ -233,7 +234,7 @@ app.put('/waitresses/:id', (req, res) => {
 });
 
 // GET /waitresses/:id/recap → Generate AI summary of leads for this waitress
-app.get('/waitresses/:id/recap', async (req, res) => {
+app.get('/waitresses/:id/recap', requireOwnWaitressOrPermission(PERMISSIONS.RECAP_VIEW), async (req, res) => {
     const { id } = req.params;
     console.log(`[AI] ✨ Generating Recap for ${id}...`);
     try {
@@ -247,7 +248,7 @@ app.get('/waitresses/:id/recap', async (req, res) => {
 });
 
 // DELETE /waitresses/:id → Remove waitress and session
-app.delete('/waitresses/:id', async (req, res) => {
+app.delete('/waitresses/:id', requirePermission(PERMISSIONS.WAITRESSES_MANAGE), async (req, res) => {
     const id = req.params.id;
     await removeSession(id).catch(() => {}); // Attempt to stop session
     const result = deleteWaitress(id);
@@ -259,21 +260,26 @@ app.delete('/waitresses/:id', async (req, res) => {
 // ─────────────────────────────────────────────
 
 // GET /promotions → List all promotions
-app.get('/promotions', (req, res) => {
+app.get('/promotions', requirePermission(PERMISSIONS.PROMOTIONS_VIEW), (req, res) => {
     res.json(loadPromotions());
 });
 
 // POST /promotions/toggle → Activate/deactivate a promotion
-app.post('/promotions/toggle', (req, res) => {
+app.post('/promotions/toggle', requirePermission(PERMISSIONS.PROMOTIONS_PUBLISH), (req, res) => {
     const { id, isActive } = req.body;
     const result = togglePromotion(id, isActive);
     res.json(result);
 });
 
 // POST /promotions → Update or add promotion
-app.post('/promotions', (req, res) => {
+app.post('/promotions', requirePermission(PERMISSIONS.PROMOTIONS_WRITE), (req, res) => {
     const promos = loadPromotions();
     const { id, title, description, isActive } = req.body;
+
+    if (req.user.role !== ROLES.ADMIN && isActive !== undefined) {
+        // Cambio agregado: manager puede editar contenido, pero no publicar/despublicar promociones.
+        return res.status(403).json({ error: 'Solo admin puede publicar promociones' });
+    }
     
     const existing = promos.active.find(p => p.id === id);
     if (existing) {
